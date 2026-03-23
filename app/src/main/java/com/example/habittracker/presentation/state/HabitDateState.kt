@@ -1,6 +1,5 @@
-package com.example.habittracker
+package com.example.habittracker.presentation.state
 
-import androidx.compose.ui.platform.LocalContext
 import java.time.LocalDate
 import java.time.Month
 

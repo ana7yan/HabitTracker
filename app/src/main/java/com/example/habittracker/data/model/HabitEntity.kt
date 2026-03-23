@@ -1,13 +1,12 @@
-package com.example.habittracker
+package com.example.habittracker.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
-import java.time.LocalDate
 
 @Serializable
 @Entity(tableName = "habits")
-data class Habit(
+data class HabitEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val name: String,

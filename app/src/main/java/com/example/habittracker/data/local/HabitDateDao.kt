@@ -1,8 +1,9 @@
-package com.example.habittracker
+package com.example.habittracker.data.local
 
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
+import com.example.habittracker.data.model.HabitDateEntity
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
@@ -11,20 +12,20 @@ interface HabitDateDao {
 
     @Query("""
     SELECT EXISTS(
-        SELECT 1 FROM habitdate
+        SELECT 1 FROM habitdateentity
         WHERE habitId = :habitId
         AND date = :date
     )
 """)
     fun isHabitCompletedOnDate(habitId: Int, date: LocalDate): Boolean
     @Upsert
-    fun upsertDate(habitDate: HabitDate)
+    fun upsertDate(habitDate: HabitDateEntity)
 
-    @Query("DELETE FROM habitdate WHERE habitId LIKE :habitId")
+    @Query("DELETE FROM habitdateentity WHERE habitId LIKE :habitId")
     fun deleteHabit(habitId: Int)
 
     @Query("""
-    SELECT date FROM habitdate 
+    SELECT date FROM habitdateentity
     WHERE habitId = :habitId 
     AND date BETWEEN :fromDate AND :toDate
 """)
@@ -33,7 +34,7 @@ interface HabitDateDao {
         fromDate: LocalDate,
         toDate: LocalDate
     ): List<LocalDate>
-    @Query("SELECT date FROM habitdate WHERE habitId = :habitId AND date BETWEEN :fromDate AND :toDate")
+    @Query("SELECT date FROM habitdateentity WHERE habitId = :habitId AND date BETWEEN :fromDate AND :toDate")
     fun getDatesOfHabitInRangeAsFlow(
         habitId: Int,
         fromDate: LocalDate,
@@ -41,7 +42,7 @@ interface HabitDateDao {
     ): Flow<List<LocalDate>>
 
     @Query("""
-    SELECT date FROM habitdate 
+    SELECT date FROM habitdateentity 
     WHERE habitId = :habitId 
 """)
     fun getDatesOfHabit(

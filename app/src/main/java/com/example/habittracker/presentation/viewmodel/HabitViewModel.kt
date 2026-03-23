@@ -1,14 +1,26 @@
-package com.example.habittracker
+package com.example.habittracker.presentation.viewmodel
 
 import android.util.Log
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.habittracker.presentation.state.HabitDateEvent
+import com.example.habittracker.presentation.state.HabitDateState
+import com.example.habittracker.presentation.state.HabitEvent
+import com.example.habittracker.presentation.state.HabitState
+import com.example.habittracker.SortType
+import com.example.habittracker.domain.model.Habit
+import com.example.habittracker.domain.model.HabitDate
+import com.example.habittracker.domain.repository.HabitDateRepository
+import com.example.habittracker.domain.repository.HabitRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -17,26 +29,34 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.Month
+import javax.inject.Inject
 
+@HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
-class HabitViewModel(
-    private val dao: HabitDao,
-    private val dateDao: HabitDateDao,
-    private val prefs: PreferencesManager,
-) : ViewModel() {
+class HabitViewModel @Inject constructor(
+    private val repository: HabitRepository,
+    private val dateRepository: HabitDateRepository
+): ViewModel() {
 
 
     private val _todayFull = MutableStateFlow(LocalDate.now())
-    var beingCheckedHabit: Habit = Habit(name = "", creationDate = "")
+
+
     private val _sortType = MutableStateFlow(SortType.NAME)
+
     private val _habits = _sortType
         .flatMapLatest { sortType ->
             when (sortType) {
-                SortType.NAME -> dao.getHabitsOrderedByName()
-                SortType.STREAK -> dao.getHabitsOrderedByStreak()
+                SortType.NAME -> repository.getHabitsOrderedByName()
+                SortType.STREAK -> repository.getHabitsOrderedByStreak()
             }
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(),
+            emptyList()
+        )
+
+
 
 
     private val _state = MutableStateFlow(HabitState())
@@ -46,8 +66,11 @@ class HabitViewModel(
             habits = habits,
             sortType = sortType
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HabitState())
-
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(),
+        HabitState()
+    )
 
     private val _dateState = MutableStateFlow(HabitDateState())
     val dateState = _dateState.asStateFlow()
@@ -56,7 +79,6 @@ class HabitViewModel(
     init {
         checkForNewDay()
         observeDayChange()
-
     }
 
     private fun observeDayChange() {
@@ -76,29 +98,27 @@ class HabitViewModel(
     private fun checkForNewDay() {
         viewModelScope.launch(Dispatchers.IO) {
             val today = LocalDate.now().toEpochDay()
-            val lastReset = prefs.getLastResetDate()
+            val lastReset = repository.getLastResetDate()
             Log.d("Prefs", "lastResetDate = ${lastReset.toString()}")
             if (lastReset != today) {
                 resetHabitsForNewDay(LocalDate.now())
-                prefs.saveLastResetDate(today)
+                repository.saveLastResetDate(today)
             }
         }
     }
 
     private fun resetHabitsForNewDay(today: LocalDate) {
         viewModelScope.launch(Dispatchers.IO) {
-            dao.getAll().forEach { habit ->
+            repository.getAllHabits().forEach { habit ->
                 val lastCompleted = habit.lastCompletedDate
 
                 if (lastCompleted == today.minusDays(2).toString()) {
-                    dao.upsertHabit(
-                        habit.copy(
-                            isCompletedToday = false,
-                            streak = 0
-                        )
-                    )
+                    repository.updateHabit(habit.copy(
+                        isCompletedToday = false,
+                        streak = 0
+                    ))
                 } else {
-                    dao.updateHabit(
+                    repository.updateHabit(
                         habit.copy(isCompletedToday = false)
                     )
                 }
@@ -118,7 +138,7 @@ class HabitViewModel(
                             month = currentState.month,
                             year = currentState.year,
                             today = currentState.today,
-                            habitDates = dateDao.getDatesOfHabitInRange(
+                            habitDates = dateRepository.getDatesOfHabitInRange(
                                 habitId = event.habitId,
                                 fromDate = fromDate,
                                 toDate = toDate
@@ -143,7 +163,7 @@ class HabitViewModel(
                             month = nextMonth,
                             year = nextYear,
                             today = nextToday,
-                            habitDates = dateDao.getDatesOfHabitInRange(
+                            habitDates = dateRepository.getDatesOfHabitInRange(
                                 habitId = event.habitId,
                                 fromDate = fromDate,
                                 toDate = toDate
@@ -169,7 +189,7 @@ class HabitViewModel(
                             month = previousMonth,
                             year = previousYear,
                             today = previousToday,
-                            habitDates = dateDao.getDatesOfHabitInRange(
+                            habitDates = dateRepository.getDatesOfHabitInRange(
                                 habitId = event.habitId,
                                 fromDate = fromDate,
                                 toDate = toDate
@@ -186,10 +206,8 @@ class HabitViewModel(
         when (event) {
             is HabitEvent.DeleteHabit -> {
                 viewModelScope.launch(Dispatchers.IO) {
-                    dao.delete(event.habit)
-                    dateDao.deleteHabit(event.habit.id)
+                    repository.deleteHabit(event.habit)
                 }
-
             }
 
             HabitEvent.HideDialog -> {
@@ -202,7 +220,6 @@ class HabitViewModel(
 
             HabitEvent.SaveHabit -> {
                 val name = state.value.name
-
                 if (name.isBlank()) {
                     return
                 }
@@ -211,7 +228,7 @@ class HabitViewModel(
                     creationDate = LocalDate.now().toString()
                 )
                 viewModelScope.launch(Dispatchers.IO) {
-                    dao.upsertHabit(habit)
+                    repository.upsertHabit(habit)
                 }
                 _state.update {
                     it.copy(
@@ -244,21 +261,19 @@ class HabitViewModel(
 
             is HabitEvent.CheckOutHabit -> {
                 viewModelScope.launch(Dispatchers.IO) {
-                    val streak = beingCheckedHabit.streak
-                    dao.updateHabit(
-                        beingCheckedHabit.copy(
-                            streak = streak + 1,
-                            lastCompletedDate = _todayFull.value.toString(),
-                            isCompletedToday = true
-                        )
-                    )
-                    dateDao.upsertDate(
+                    val streak = event.habit.streak
+                    repository.upsertHabit(
+                        event.habit.copy(
+                        streak = streak + 1,
+                        lastCompletedDate = _todayFull.value.toString(),
+                        isCompletedToday = true
+                    ))
+                    dateRepository.upsertDate(
                         habitDate = HabitDate(
-                            habitId = beingCheckedHabit.id,
+                            habitId = event.habit.id,
                             date = _todayFull.value
                         )
                     )
-
                 }
             }
         }
@@ -268,10 +283,10 @@ class HabitViewModel(
         return state.value.habits.find { it.id == id }
     }
 
-    fun getLastSevenDaysFlow(id: Int): Flow<List<LocalDate>> {
+     fun getLastSevenDaysFlow(id: Int): Flow<List<LocalDate>> {
         val sevenDaysAgo = LocalDate.now().minusDays(7)
         val today = LocalDate.now()
 
-        return dateDao.getDatesOfHabitInRangeAsFlow(id, sevenDaysAgo, today)
+        return dateRepository.getDatesOfHabitInRangeAsFlow(id,sevenDaysAgo,today)
     }
 }

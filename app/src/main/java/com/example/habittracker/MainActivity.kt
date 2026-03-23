@@ -7,9 +7,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
@@ -17,18 +16,24 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import androidx.room.Room
+import com.example.habittracker.data.local.HabitDatabase
+import com.example.habittracker.presentation.screen.HabitDateScreen
+import com.example.habittracker.presentation.screen.HabitScreen
+import com.example.habittracker.presentation.viewmodel.HabitViewModel
 import com.example.habittracker.ui.theme.HabitTrackerTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.serialization.Serializable
 import kotlin.getValue
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private val db by lazy {
+    /*private val db by lazy {
         Room.databaseBuilder(
             applicationContext,
             HabitDatabase::class.java,
-            "habits.dp"
+            "habits.db"
         ).build()
-    }
+    }*/
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,15 +43,16 @@ class MainActivity : ComponentActivity() {
             HabitTrackerTheme {
                 val navController = rememberNavController()
                 val prefs = PreferencesManager(applicationContext)
-                val viewModel by viewModels<HabitViewModel>(
+                val viewModel = hiltViewModel<HabitViewModel>()
+                /*val viewModel by viewModels<HabitViewModel>(
                     factoryProducer = {
                         object : ViewModelProvider.Factory{
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return HabitViewModel(db.habitDao,db.dateDao,prefs) as T
+                                return HabitViewModel(db.habitDao, db.dateDao, prefs) as T
                             }
                         }
                     }
-                )
+                )*/
                 val state by viewModel.state.collectAsState()
                 val dateState by viewModel.dateState.collectAsState()
 
@@ -57,7 +63,6 @@ class MainActivity : ComponentActivity() {
                     composable(route = "main") {
                         HabitScreen(
                             state = state,
-                            viewModel = viewModel,
                             onEvent = viewModel::onEvent,
                             navController = navController,
                             applicationContext
@@ -65,7 +70,7 @@ class MainActivity : ComponentActivity() {
                     }
                     composable<HabitId> { backStackEntry ->
                         val habit: HabitId = backStackEntry.toRoute()
-                        HabitProgressScreen(
+                        HabitDateScreen(
                             state = dateState,
                             habitId = habit.habitId,
                             navController = navController,

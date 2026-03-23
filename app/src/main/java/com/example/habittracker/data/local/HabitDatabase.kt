@@ -1,13 +1,16 @@
-package com.example.habittracker
+package com.example.habittracker.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import com.example.habittracker.data.local.HabitDateDao
+import com.example.habittracker.data.model.HabitDateEntity
+import com.example.habittracker.data.model.HabitEntity
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-@Database(entities = [Habit::class, HabitDate::class], version = 1)
+@Database(entities = [HabitEntity::class, HabitDateEntity::class], version = 1)
 @TypeConverters(Converters::class)
 abstract class HabitDatabase : RoomDatabase() {
     abstract val habitDao: HabitDao

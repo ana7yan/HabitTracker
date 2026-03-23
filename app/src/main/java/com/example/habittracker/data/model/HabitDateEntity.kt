@@ -1,15 +1,14 @@
-package com.example.habittracker
+package com.example.habittracker.data.model
 
-import androidx.compose.ui.platform.LocalContext
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.time.LocalDate
 
 @Entity(
-    indices = [Index(value = ["habitId","date"], unique = true)]
+    indices = [Index(value = ["habitId", "date"], unique = true)]
 )
-data class HabitDate(
+data class HabitDateEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val habitId: Int,

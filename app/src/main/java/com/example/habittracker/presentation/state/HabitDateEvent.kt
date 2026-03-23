@@ -1,6 +1,4 @@
-package com.example.habittracker
-
-import java.time.LocalDate
+package com.example.habittracker.presentation.state
 
 sealed interface HabitDateEvent {
     data class NextMonth(val habitId: Int): HabitDateEvent

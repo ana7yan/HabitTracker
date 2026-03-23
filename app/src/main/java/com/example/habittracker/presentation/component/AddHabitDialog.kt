@@ -1,4 +1,4 @@
-package com.example.habittracker
+package com.example.habittracker.presentation.component
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +13,8 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.habittracker.presentation.state.HabitEvent
+import com.example.habittracker.presentation.state.HabitState
 
 @Composable
 fun AddHabitDialog(

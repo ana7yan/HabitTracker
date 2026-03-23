@@ -1,4 +1,8 @@
-package com.example.habittracker
+package com.example.habittracker.presentation.state
+
+import com.example.habittracker.SortType
+import com.example.habittracker.data.model.HabitEntity
+import com.example.habittracker.domain.model.Habit
 
 sealed interface HabitEvent {
     object SaveHabit: HabitEvent

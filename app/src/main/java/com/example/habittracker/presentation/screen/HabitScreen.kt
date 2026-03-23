@@ -1,9 +1,8 @@
-package com.example.habittracker
+package com.example.habittracker.presentation.screen
 
 import android.content.Context
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateSizeAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,21 +22,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.navigation.NavController
-import kotlinx.coroutines.flow.flowOf
 import androidx.compose.runtime.getValue
-import com.google.android.material.shape.MaterialShapes
+import com.example.habittracker.presentation.component.AddHabitDialog
+import com.example.habittracker.presentation.state.HabitEvent
+import com.example.habittracker.HabitId
+import com.example.habittracker.presentation.state.HabitState
+import com.example.habittracker.presentation.viewmodel.HabitViewModel
+import com.example.habittracker.SortType
 
 @Composable
 fun HabitScreen(
     state: HabitState,
-    viewModel: HabitViewModel,
     onEvent: (HabitEvent) -> Unit,
     navController: NavController,
     context: Context,
@@ -222,7 +222,6 @@ fun HabitScreen(
                             Checkbox(
                                 checked = habit.isCompletedToday,
                                 onCheckedChange = {
-                                    viewModel.beingCheckedHabit = habit
                                     onEvent(HabitEvent.CheckOutHabit(habit))
                                 },
                                 enabled = !habit.isCompletedToday,

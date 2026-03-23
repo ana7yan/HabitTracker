@@ -1,4 +1,4 @@
-package com.example.habittracker
+package com.example.habittracker.presentation.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,12 +20,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.habittracker.presentation.state.HabitDateEvent
+import com.example.habittracker.presentation.state.HabitDateState
+import com.example.habittracker.presentation.viewmodel.HabitViewModel
 import java.time.LocalDate
 import java.time.Month
+import java.time.format.TextStyle
 import java.util.Locale
 
 @Composable
-fun HabitProgressScreen(
+fun HabitDateScreen(
     state: HabitDateState,
     habitId: Int,
     navController: NavController,
@@ -83,7 +87,6 @@ fun HabitProgressScreen(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
-
                 val lastSevenDaysCompleted =
                     viewModel.getLastSevenDaysFlow(habitId)
                         .collectAsState(initial = emptyList())
@@ -260,7 +263,7 @@ fun DayBox(
 
     val dayName =
         date.dayOfWeek.getDisplayName(
-            java.time.format.TextStyle.SHORT,
+            TextStyle.SHORT,
             Locale.getDefault()
         )
 
@@ -297,7 +300,7 @@ fun DayBox(
             fontWeight = FontWeight.Bold,
             color = if (isCompleted)
                 MaterialTheme.colorScheme.onPrimary
-            else
+           else
                 MaterialTheme.colorScheme.onSurface
         )
     }
