@@ -1,6 +1,6 @@
 package com.example.habittracker.domain.repository
 
-import com.example.habittracker.SortType
+import com.example.habittracker.domain.model.SortType
 import com.example.habittracker.domain.model.Habit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,8 +16,7 @@ interface HabitRepository {
     suspend fun updateHabit(habit: Habit)
 
     suspend fun deleteHabit(habit: Habit)
-    suspend fun getLastResetDate(): Long?
-    suspend fun saveLastResetDate(date:Long)
+
 
 
 }

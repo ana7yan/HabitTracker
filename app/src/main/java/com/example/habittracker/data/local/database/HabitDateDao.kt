@@ -1,4 +1,4 @@
-package com.example.habittracker.data.local
+package com.example.habittracker.data.local.database
 
 import androidx.room.Dao
 import androidx.room.Query

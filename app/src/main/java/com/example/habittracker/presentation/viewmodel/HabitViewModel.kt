@@ -1,18 +1,20 @@
 package com.example.habittracker.presentation.viewmodel
 
-import android.util.Log
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.habittracker.presentation.state.HabitDateEvent
 import com.example.habittracker.presentation.state.HabitDateState
 import com.example.habittracker.presentation.state.HabitEvent
 import com.example.habittracker.presentation.state.HabitState
-import com.example.habittracker.SortType
+import com.example.habittracker.domain.model.SortType
 import com.example.habittracker.domain.model.Habit
-import com.example.habittracker.domain.model.HabitDate
-import com.example.habittracker.domain.repository.HabitDateRepository
-import com.example.habittracker.domain.repository.HabitRepository
+import com.example.habittracker.domain.usecase.AddHabitUseCase
+import com.example.habittracker.domain.usecase.CheckOutHabitUseCase
+import com.example.habittracker.domain.usecase.DeleteHabitUseCase
+import com.example.habittracker.domain.usecase.GetAllHabitsUseCase
+import com.example.habittracker.domain.usecase.CheckAndResetHabitForNewDayUseCase
+import com.example.habittracker.domain.usecase.GetHabitDatesAsFlowUseCase
+import com.example.habittracker.domain.usecase.GetHabitDatesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -20,45 +22,38 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.Month
 import javax.inject.Inject
 
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
 class HabitViewModel @Inject constructor(
-    private val repository: HabitRepository,
-    private val dateRepository: HabitDateRepository
+    private val getAllHabitsUseCase: GetAllHabitsUseCase,
+    private val addHabitUseCase: AddHabitUseCase,
+    private val checkOutHabitUseCase: CheckOutHabitUseCase,
+    private val deleteHabitUseCase: DeleteHabitUseCase,
+    private val checkAndResetHabitForNewDayUseCase: CheckAndResetHabitForNewDayUseCase,
+    private val getHabitDatesUseCase: GetHabitDatesUseCase,
+    private val getHabitDatesAsFlowUseCase: GetHabitDatesAsFlowUseCase
 ): ViewModel() {
-
-
-    private val _todayFull = MutableStateFlow(LocalDate.now())
-
-
     private val _sortType = MutableStateFlow(SortType.NAME)
-
     private val _habits = _sortType
         .flatMapLatest { sortType ->
-            when (sortType) {
-                SortType.NAME -> repository.getHabitsOrderedByName()
-                SortType.STREAK -> repository.getHabitsOrderedByStreak()
-            }
+            getAllHabitsUseCase(sortType)
         }.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(),
             emptyList()
         )
-
-
-
-
     private val _state = MutableStateFlow(HabitState())
 
     val state = combine(_state, _sortType, _habits) { state, sortType, habits ->
@@ -82,66 +77,43 @@ class HabitViewModel @Inject constructor(
     }
 
     private fun observeDayChange() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO){
             while (true) {
-                delay(60_000)
-                val now = LocalDate.now()
-                if (now != _todayFull.value) {
-                    _todayFull.value = now
-                    resetHabitsForNewDay(now)
-                }
+                val now = LocalDateTime.now()
+                val nextMidnight = now.toLocalDate().plusDays(1).atStartOfDay()
+
+                val delayMillis = Duration.between(now, nextMidnight).toMillis()
+
+                delay(delayMillis)
+
+                checkAndResetHabitForNewDayUseCase()
             }
+        }
+    }
+    fun checkForNewDay() {
+        viewModelScope.launch {
+            checkAndResetHabitForNewDayUseCase()
         }
     }
 
 
-    private fun checkForNewDay() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val today = LocalDate.now().toEpochDay()
-            val lastReset = repository.getLastResetDate()
-            Log.d("Prefs", "lastResetDate = ${lastReset.toString()}")
-            if (lastReset != today) {
-                resetHabitsForNewDay(LocalDate.now())
-                repository.saveLastResetDate(today)
-            }
-        }
-    }
 
-    private fun resetHabitsForNewDay(today: LocalDate) {
-        viewModelScope.launch(Dispatchers.IO) {
-            repository.getAllHabits().forEach { habit ->
-                val lastCompleted = habit.lastCompletedDate
 
-                if (lastCompleted == today.minusDays(2).toString()) {
-                    repository.updateHabit(habit.copy(
-                        isCompletedToday = false,
-                        streak = 0
-                    ))
-                } else {
-                    repository.updateHabit(
-                        habit.copy(isCompletedToday = false)
-                    )
-                }
-            }
-        }
-    }
 
     fun onDateEvent(event: HabitDateEvent) {
         when (event) {
             is HabitDateEvent.ThisMonth -> {
                 val currentState = _dateState.value
-                val fromDate = LocalDate.of(currentState.year, currentState.month, 1)
-                val toDate = fromDate.withDayOfMonth(fromDate.lengthOfMonth())
                 viewModelScope.launch(Dispatchers.IO) {
                     _dateState.update {
                         it.copy(
                             month = currentState.month,
                             year = currentState.year,
                             today = currentState.today,
-                            habitDates = dateRepository.getDatesOfHabitInRange(
-                                habitId = event.habitId,
-                                fromDate = fromDate,
-                                toDate = toDate
+                            habitDates = getHabitDatesUseCase(
+                                id = event.habitId,
+                                fromDate = getMonthRange(currentState.year,currentState.month).first,
+                                toDate = getMonthRange(currentState.year,currentState.month).second
                             )
                         )
                     }
@@ -155,18 +127,16 @@ class HabitViewModel @Inject constructor(
                     if (nextMonth == Month.JANUARY) currentState.year + 1 else currentState.year
                 val nextToday =
                     if (nextMonth == LocalDate.now().month && nextYear == LocalDate.now().year) LocalDate.now().dayOfMonth else 0
-                val fromDate = LocalDate.of(nextYear, nextMonth, 1)
-                val toDate = fromDate.withDayOfMonth(fromDate.lengthOfMonth())
                 viewModelScope.launch(Dispatchers.IO) {
                     _dateState.update {
                         it.copy(
                             month = nextMonth,
                             year = nextYear,
                             today = nextToday,
-                            habitDates = dateRepository.getDatesOfHabitInRange(
-                                habitId = event.habitId,
-                                fromDate = fromDate,
-                                toDate = toDate
+                            habitDates = getHabitDatesUseCase(
+                                id = event.habitId,
+                                fromDate = getMonthRange(nextYear,nextMonth).first,
+                                toDate = getMonthRange(nextYear,nextMonth).second
                             )
                         )
                     }
@@ -181,18 +151,16 @@ class HabitViewModel @Inject constructor(
                     if (previousMonth == Month.DECEMBER) currentState.year - 1 else currentState.year
                 val previousToday =
                     if (previousMonth == LocalDate.now().month && previousYear == LocalDate.now().year) LocalDate.now().dayOfMonth else 0
-                val fromDate = LocalDate.of(previousYear, previousMonth, 1)
-                val toDate = fromDate.withDayOfMonth(fromDate.lengthOfMonth())
                 viewModelScope.launch(Dispatchers.IO) {
                     _dateState.update {
                         it.copy(
                             month = previousMonth,
                             year = previousYear,
                             today = previousToday,
-                            habitDates = dateRepository.getDatesOfHabitInRange(
-                                habitId = event.habitId,
-                                fromDate = fromDate,
-                                toDate = toDate
+                            habitDates = getHabitDatesUseCase(
+                                id = event.habitId,
+                                fromDate = getMonthRange(previousYear,previousMonth).first,
+                                toDate = getMonthRange(previousYear,previousMonth).second
                             )
                         )
                     }
@@ -201,12 +169,17 @@ class HabitViewModel @Inject constructor(
             }
         }
     }
+    private fun getMonthRange(year: Int, month: Month): Pair<LocalDate, LocalDate> {
+        val from = LocalDate.of(year, month, 1)
+        val to = from.withDayOfMonth(from.lengthOfMonth())
+        return from to to
+    }
 
     fun onEvent(event: HabitEvent) {
         when (event) {
             is HabitEvent.DeleteHabit -> {
                 viewModelScope.launch(Dispatchers.IO) {
-                    repository.deleteHabit(event.habit)
+                    deleteHabitUseCase(event.habit)
                 }
             }
 
@@ -227,8 +200,9 @@ class HabitViewModel @Inject constructor(
                     name = name,
                     creationDate = LocalDate.now().toString()
                 )
+
                 viewModelScope.launch(Dispatchers.IO) {
-                    repository.upsertHabit(habit)
+                    addHabitUseCase(habit)
                 }
                 _state.update {
                     it.copy(
@@ -261,18 +235,8 @@ class HabitViewModel @Inject constructor(
 
             is HabitEvent.CheckOutHabit -> {
                 viewModelScope.launch(Dispatchers.IO) {
-                    val streak = event.habit.streak
-                    repository.upsertHabit(
-                        event.habit.copy(
-                        streak = streak + 1,
-                        lastCompletedDate = _todayFull.value.toString(),
-                        isCompletedToday = true
-                    ))
-                    dateRepository.upsertDate(
-                        habitDate = HabitDate(
-                            habitId = event.habit.id,
-                            date = _todayFull.value
-                        )
+                    checkOutHabitUseCase(
+                        habit = event.habit
                     )
                 }
             }
@@ -282,11 +246,7 @@ class HabitViewModel @Inject constructor(
     fun getHabitById(id: Int): Habit? {
         return state.value.habits.find { it.id == id }
     }
-
-     fun getLastSevenDaysFlow(id: Int): Flow<List<LocalDate>> {
-        val sevenDaysAgo = LocalDate.now().minusDays(7)
-        val today = LocalDate.now()
-
-        return dateRepository.getDatesOfHabitInRangeAsFlow(id,sevenDaysAgo,today)
+    fun getLastSevenDaysFlow(id: Int): Flow<List<LocalDate>> {
+        return getHabitDatesAsFlowUseCase(id)
     }
 }

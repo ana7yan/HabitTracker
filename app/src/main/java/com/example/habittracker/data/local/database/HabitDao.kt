@@ -1,4 +1,4 @@
-package com.example.habittracker.data.local
+package com.example.habittracker.data.local.database
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface HabitDao{
     @Query("Select * from habits")
-    fun getAll(): List<HabitEntity>
+    suspend fun getAll(): List<HabitEntity>
 
 
     /*@Query("SELECT * FROM habits WHERE id IN (:habitIds)")

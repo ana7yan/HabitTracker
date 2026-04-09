@@ -46,8 +46,15 @@ fun AddHabitDialog(
 
                 OutlinedTextField(
                     value = state.name,
-                    onValueChange = {
-                        onEvent(HabitEvent.SetName(it))
+                    maxLines = 1,
+                    singleLine = true,
+                    onValueChange = { input ->
+                        val formatted = input.split(" ").joinToString(" ") { word ->
+                            word.lowercase().replaceFirstChar { it.uppercase() }
+                        }
+                        if (formatted.length <= 30) {
+                            onEvent(HabitEvent.SetName(formatted))
+                        }
                     },
 
                     placeholder = {

@@ -1,4 +1,4 @@
-package com.example.habittracker
+package com.example.habittracker.data.local.preferences
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit

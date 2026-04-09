@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -31,9 +32,9 @@ import androidx.compose.runtime.getValue
 import com.example.habittracker.presentation.component.AddHabitDialog
 import com.example.habittracker.presentation.state.HabitEvent
 import com.example.habittracker.HabitId
+import com.example.habittracker.domain.model.Habit
 import com.example.habittracker.presentation.state.HabitState
-import com.example.habittracker.presentation.viewmodel.HabitViewModel
-import com.example.habittracker.SortType
+import com.example.habittracker.domain.model.SortType
 
 @Composable
 fun HabitScreen(
@@ -56,184 +57,213 @@ fun HabitScreen(
                 )
             }
         }
-
     ) { padding ->
 
         if (state.isAddingHabit) {
             AddHabitDialog(state = state, onEvent = onEvent)
         }
 
-        LazyColumn(
-            contentPadding = padding,
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp)
-                .padding(top = 15.dp),
+                .padding(padding)
+                .padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
-            item {
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            HabitSortLine(state, onEvent)
 
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outline
+            )
+
+            Text(
+                text = "Your Habits",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                if (state.habits.isEmpty()) {
                     Text(
-                        text = "Sort by:",
-                        color = MaterialTheme.colorScheme.onBackground
+                        text = "No Habits Yet",
+                        modifier = Modifier.align(Alignment.Center),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.outline
                     )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    SortType.values().forEach { sortType ->
-
-                        Row(
-                            modifier = Modifier
-                                .clickable {
-                                    onEvent(HabitEvent.SortHabits(sortType))
-                                }
-                                .padding(end = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-
-                            RadioButton(
-                                selected = state.sortType == sortType,
-                                onClick = {
-                                    onEvent(HabitEvent.SortHabits(sortType))
-                                },
-                                colors = RadioButtonDefaults.colors(
-                                    selectedColor = MaterialTheme.colorScheme.primary
-                                )
-                            )
-
-                            Text(
-                                text = sortType.name,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                        }
-                    }
-                }
-            }
-
-            item {
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant
-                )
-            }
-
-            item {
-
-                Text(
-                    text = "Your Habits",
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
-
-            items(
-                items = state.habits,
-                key = { habit -> habit.id }
-            ) { habit ->
-                val swipeToDismissBoxState = remember(habit.id) {
-                    SwipeToDismissBoxState(
-                        initialValue = SwipeToDismissBoxValue.Settled,
-                        density = Density(context = context),
-                        positionalThreshold = { fullWidthPx: Float -> fullWidthPx * 0.25f }, // 25% swipe
-                        confirmValueChange = {
-                            if (it == SwipeToDismissBoxValue.EndToStart) {
-                                onEvent(HabitEvent.DeleteHabit(habit))
-                            }
-                            it != SwipeToDismissBoxValue.EndToStart
-                        }
-                    )
-                }
-                val surfacePadding by animateDpAsState(
-                    targetValue = if(habit.isCompletedToday) 8.dp else 0.dp,
-                    animationSpec = tween(500)
-                )
-                SwipeToDismissBox(
-                    state = swipeToDismissBoxState,
-                    backgroundContent = {
-                        Box(
-                            modifier = Modifier
-                                .padding(surfacePadding)
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.error, RoundedCornerShape(15.dp))
-                                .padding(horizontal = 16.dp),
-                            contentAlignment = Alignment.CenterEnd
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                tint = Color.White
-                            )
-                        }
-                    },
-                    enableDismissFromEndToStart = true,
-                    enableDismissFromStartToEnd = false
-                ) {
-                    val backgroundColor by animateColorAsState(
-                        targetValue = if (habit.isCompletedToday) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.surface,
-                        animationSpec = tween(500)
-                    )
-
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        tonalElevation = 3.dp,
-                        color = backgroundColor,
-                        modifier = Modifier.fillMaxWidth().padding(all = surfacePadding)
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clickable {
-                                    navController.navigate(HabitId(habit.id))
-                                }
-                                .padding(16.dp)
-                        ) {
-
-                            Text(
-                                text = habit.streak.toString(),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-
-                            Spacer(modifier = Modifier.width(6.dp))
-
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary
-                            )
-
-                            Text(
-                                text = habit.name,
-                                fontSize = 20.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(horizontal = 12.dp)
-                            )
-
-                            Checkbox(
-                                checked = habit.isCompletedToday,
-                                onCheckedChange = {
-                                    onEvent(HabitEvent.CheckOutHabit(habit))
-                                },
-                                enabled = !habit.isCompletedToday,
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = MaterialTheme.colorScheme.primary
-                                )
-                            )
+                        items(
+                            items = state.habits,
+                            key = { habit -> habit.id }
+                        ) { habit ->
+                            SingleHabitBox(habit, onEvent, navController, context)
                         }
                     }
                 }
             }
         }
+
     }
 }
 
+@Composable
+fun HabitSortLine(
+    state: HabitState,
+    onEvent: (HabitEvent) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        Text(
+            text = "Sort by:",
+            color = MaterialTheme.colorScheme.onBackground
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+
+        SortType.entries.forEach { sortType ->
+
+            Row(
+                modifier = Modifier
+                    .clickable {
+                        onEvent(HabitEvent.SortHabits(sortType))
+                    }
+                    .padding(end = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                RadioButton(
+                    selected = state.sortType == sortType,
+                    onClick = {
+                        onEvent(HabitEvent.SortHabits(sortType))
+                    },
+                    colors = RadioButtonDefaults.colors(
+                        selectedColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+
+                Text(
+                    text = sortType.name,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SingleHabitBox(
+    habit: Habit,
+    onEvent: (HabitEvent) -> Unit,
+    navController: NavController,
+    context: Context,
+) {
+    val swipeToDismissBoxState = remember(habit.id) {
+        SwipeToDismissBoxState(
+            initialValue = SwipeToDismissBoxValue.Settled,
+            density = Density(context = context),
+            positionalThreshold = { fullWidthPx: Float -> fullWidthPx * 0.25f }, // 25% swipe
+            confirmValueChange = {
+                if (it == SwipeToDismissBoxValue.EndToStart) {
+                    onEvent(HabitEvent.DeleteHabit(habit))
+                }
+                it != SwipeToDismissBoxValue.EndToStart
+            }
+        )
+    }
+    val surfacePadding by animateDpAsState(
+        targetValue = if (habit.isCompletedToday) 8.dp else 0.dp,
+        animationSpec = tween(500)
+    )
+    SwipeToDismissBox(
+        state = swipeToDismissBoxState,
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .padding(surfacePadding)
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.error, RoundedCornerShape(15.dp))
+                    .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = Color.White
+                )
+            }
+        },
+        enableDismissFromEndToStart = true,
+        enableDismissFromStartToEnd = false
+    ) {
+        val backgroundColor by animateColorAsState(
+            targetValue = if (habit.isCompletedToday) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.surface,
+            animationSpec = tween(500)
+        )
+
+        Surface(
+            shape = MaterialTheme.shapes.medium,
+            tonalElevation = 3.dp,
+            color = backgroundColor,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(all = surfacePadding)
+        ) {
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clickable {
+                        navController.navigate(HabitId(habit.id))
+                    }
+                    .padding(16.dp)
+            ) {
+
+                Text(
+                    text = habit.streak.toString(),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.tertiary
+                )
+
+                Text(
+                    text = habit.name,
+                    fontSize = 20.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 12.dp)
+                )
+
+                Checkbox(
+                    checked = habit.isCompletedToday,
+                    onCheckedChange = {
+                        onEvent(HabitEvent.CheckOutHabit(habit))
+                    },
+                    enabled = !habit.isCompletedToday,
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+            }
+        }
+    }
+}

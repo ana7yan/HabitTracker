@@ -1,7 +1,7 @@
 package com.example.habittracker.data.repository
 
 import androidx.datastore.dataStore
-import com.example.habittracker.data.local.HabitDateDao
+import com.example.habittracker.data.local.database.HabitDateDao
 import com.example.habittracker.domain.model.HabitDate
 import com.example.habittracker.domain.repository.HabitDateRepository
 import kotlinx.coroutines.flow.Flow
@@ -32,4 +32,9 @@ class HabitDateRepositoryImpl(
     ): Flow<List<LocalDate>> {
         return dateDao.getDatesOfHabitInRangeAsFlow(id,sevenDaysAgo,today)
     }
+
+    override fun deleteHabit(habitId: Int) {
+        dateDao.deleteHabit(habitId)
+    }
+
 }

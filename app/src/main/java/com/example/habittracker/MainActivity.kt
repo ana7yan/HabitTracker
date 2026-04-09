@@ -6,24 +6,19 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import androidx.room.Room
-import com.example.habittracker.data.local.HabitDatabase
+import com.example.habittracker.data.local.preferences.PreferencesManager
 import com.example.habittracker.presentation.screen.HabitDateScreen
 import com.example.habittracker.presentation.screen.HabitScreen
 import com.example.habittracker.presentation.viewmodel.HabitViewModel
 import com.example.habittracker.ui.theme.HabitTrackerTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.serialization.Serializable
-import kotlin.getValue
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
