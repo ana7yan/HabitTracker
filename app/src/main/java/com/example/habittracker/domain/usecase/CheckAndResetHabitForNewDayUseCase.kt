@@ -4,8 +4,9 @@ import com.example.habittracker.domain.model.Habit
 import com.example.habittracker.domain.repository.HabitRepository
 import com.example.habittracker.domain.repository.PreferencesRepository
 import java.time.LocalDate
+import javax.inject.Inject
 
-class CheckAndResetHabitForNewDayUseCase(
+class CheckAndResetHabitForNewDayUseCase @Inject constructor (
     private val repository: HabitRepository,
     private val preferencesRepository: PreferencesRepository
 ) {

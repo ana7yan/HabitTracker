@@ -1,10 +1,8 @@
 package com.example.habittracker.domain.repository
 
-import com.example.habittracker.domain.model.SortType
+
 import com.example.habittracker.domain.model.Habit
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
-import java.time.LocalDate
 
 interface HabitRepository {
     suspend fun getAllHabits(): List<Habit>

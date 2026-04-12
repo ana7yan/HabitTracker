@@ -3,8 +3,9 @@ package com.example.habittracker.domain.usecase
 import com.example.habittracker.domain.repository.HabitDateRepository
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
+import javax.inject.Inject
 
-class GetHabitDatesAsFlowUseCase(
+class GetHabitDatesAsFlowUseCase @Inject constructor (
     private val dateRepository: HabitDateRepository
 ) {
     operator fun invoke(id : Int): Flow<List<LocalDate>>{

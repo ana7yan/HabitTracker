@@ -4,7 +4,6 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
-import com.example.habittracker.data.local.database.HabitDao
 import com.example.habittracker.data.model.HabitDateEntity
 import com.example.habittracker.data.model.HabitEntity
 import java.time.LocalDate

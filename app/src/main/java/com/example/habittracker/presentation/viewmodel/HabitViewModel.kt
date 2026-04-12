@@ -1,10 +1,11 @@
 package com.example.habittracker.presentation.viewmodel
 
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.habittracker.presentation.state.HabitDateEvent
+import com.example.habittracker.presentation.event.HabitDateEvent
 import com.example.habittracker.presentation.state.HabitDateState
-import com.example.habittracker.presentation.state.HabitEvent
+import com.example.habittracker.presentation.event.HabitEvent
 import com.example.habittracker.presentation.state.HabitState
 import com.example.habittracker.domain.model.SortType
 import com.example.habittracker.domain.model.Habit
@@ -43,8 +44,8 @@ class HabitViewModel @Inject constructor(
     private val deleteHabitUseCase: DeleteHabitUseCase,
     private val checkAndResetHabitForNewDayUseCase: CheckAndResetHabitForNewDayUseCase,
     private val getHabitDatesUseCase: GetHabitDatesUseCase,
-    private val getHabitDatesAsFlowUseCase: GetHabitDatesAsFlowUseCase
-): ViewModel() {
+    private val getHabitDatesAsFlowUseCase: GetHabitDatesAsFlowUseCase,
+) : ViewModel() {
     private val _sortType = MutableStateFlow(SortType.NAME)
     private val _habits = _sortType
         .flatMapLatest { sortType ->
@@ -77,7 +78,7 @@ class HabitViewModel @Inject constructor(
     }
 
     private fun observeDayChange() {
-        viewModelScope.launch(Dispatchers.IO){
+        viewModelScope.launch(Dispatchers.IO) {
             while (true) {
                 val now = LocalDateTime.now()
                 val nextMidnight = now.toLocalDate().plusDays(1).atStartOfDay()
@@ -90,14 +91,12 @@ class HabitViewModel @Inject constructor(
             }
         }
     }
+
     fun checkForNewDay() {
         viewModelScope.launch {
             checkAndResetHabitForNewDayUseCase()
         }
     }
-
-
-
 
 
     fun onDateEvent(event: HabitDateEvent) {
@@ -112,8 +111,11 @@ class HabitViewModel @Inject constructor(
                             today = currentState.today,
                             habitDates = getHabitDatesUseCase(
                                 id = event.habitId,
-                                fromDate = getMonthRange(currentState.year,currentState.month).first,
-                                toDate = getMonthRange(currentState.year,currentState.month).second
+                                fromDate = getMonthRange(
+                                    currentState.year,
+                                    currentState.month
+                                ).first,
+                                toDate = getMonthRange(currentState.year, currentState.month).second
                             )
                         )
                     }
@@ -135,8 +137,8 @@ class HabitViewModel @Inject constructor(
                             today = nextToday,
                             habitDates = getHabitDatesUseCase(
                                 id = event.habitId,
-                                fromDate = getMonthRange(nextYear,nextMonth).first,
-                                toDate = getMonthRange(nextYear,nextMonth).second
+                                fromDate = getMonthRange(nextYear, nextMonth).first,
+                                toDate = getMonthRange(nextYear, nextMonth).second
                             )
                         )
                     }
@@ -159,8 +161,8 @@ class HabitViewModel @Inject constructor(
                             today = previousToday,
                             habitDates = getHabitDatesUseCase(
                                 id = event.habitId,
-                                fromDate = getMonthRange(previousYear,previousMonth).first,
-                                toDate = getMonthRange(previousYear,previousMonth).second
+                                fromDate = getMonthRange(previousYear, previousMonth).first,
+                                toDate = getMonthRange(previousYear, previousMonth).second
                             )
                         )
                     }
@@ -169,6 +171,7 @@ class HabitViewModel @Inject constructor(
             }
         }
     }
+
     private fun getMonthRange(year: Int, month: Month): Pair<LocalDate, LocalDate> {
         val from = LocalDate.of(year, month, 1)
         val to = from.withDayOfMonth(from.lengthOfMonth())
@@ -246,6 +249,7 @@ class HabitViewModel @Inject constructor(
     fun getHabitById(id: Int): Habit? {
         return state.value.habits.find { it.id == id }
     }
+
     fun getLastSevenDaysFlow(id: Int): Flow<List<LocalDate>> {
         return getHabitDatesAsFlowUseCase(id)
     }

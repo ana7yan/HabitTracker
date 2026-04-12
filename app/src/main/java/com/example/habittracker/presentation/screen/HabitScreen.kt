@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
@@ -30,21 +31,52 @@ import androidx.compose.ui.unit.Density
 import androidx.navigation.NavController
 import androidx.compose.runtime.getValue
 import com.example.habittracker.presentation.component.AddHabitDialog
-import com.example.habittracker.presentation.state.HabitEvent
+import com.example.habittracker.presentation.event.HabitEvent
 import com.example.habittracker.HabitId
 import com.example.habittracker.domain.model.Habit
 import com.example.habittracker.presentation.state.HabitState
 import com.example.habittracker.domain.model.SortType
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HabitScreen(
     state: HabitState,
+    isLoggedIn: Boolean,
     onEvent: (HabitEvent) -> Unit,
     navController: NavController,
     context: Context,
 ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.primary
+                ),
+                title = {
+                    Text("Habit Tracker")
+                },
+                actions = {
+                    IconButton(onClick = {
+                        if(isLoggedIn){
+                            navController.navigate("account")
+                        }else{
+                            navController.navigate("login")
+                        }
+
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { onEvent(HabitEvent.ShowDialog) },

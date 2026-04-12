@@ -1,4 +1,4 @@
-package com.example.habittracker.presentation.state
+package com.example.habittracker.presentation.event
 
 sealed interface HabitDateEvent {
     data class NextMonth(val habitId: Int): HabitDateEvent

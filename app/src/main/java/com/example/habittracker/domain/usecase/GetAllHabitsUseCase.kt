@@ -4,8 +4,9 @@ import com.example.habittracker.domain.model.SortType
 import com.example.habittracker.domain.model.Habit
 import com.example.habittracker.domain.repository.HabitRepository
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
-class GetAllHabitsUseCase(
+class GetAllHabitsUseCase @Inject constructor (
     private val repository: HabitRepository
 ) {
     suspend operator fun invoke(sortType: SortType): Flow<List<Habit>> {

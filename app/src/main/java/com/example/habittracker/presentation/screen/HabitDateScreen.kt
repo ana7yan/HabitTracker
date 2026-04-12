@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.habittracker.presentation.state.HabitDateEvent
+import com.example.habittracker.presentation.event.HabitDateEvent
 import com.example.habittracker.presentation.state.HabitDateState
 import com.example.habittracker.presentation.viewmodel.HabitViewModel
 import java.time.LocalDate

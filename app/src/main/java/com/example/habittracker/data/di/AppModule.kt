@@ -6,19 +6,16 @@ import com.example.habittracker.data.local.preferences.PreferencesManager
 import com.example.habittracker.data.local.database.HabitDao
 import com.example.habittracker.data.local.database.HabitDatabase
 import com.example.habittracker.data.local.database.HabitDateDao
+import com.example.habittracker.data.remote.FirebaseAuthDataSource
 import com.example.habittracker.data.repository.HabitDateRepositoryImpl
 import com.example.habittracker.data.repository.HabitRepositoryImpl
 import com.example.habittracker.data.repository.PreferencesRepositoryImpl
+import com.example.habittracker.data.repository.UserAuthRepositoryImpl
 import com.example.habittracker.domain.repository.HabitDateRepository
 import com.example.habittracker.domain.repository.HabitRepository
 import com.example.habittracker.domain.repository.PreferencesRepository
-import com.example.habittracker.domain.usecase.AddHabitUseCase
-import com.example.habittracker.domain.usecase.CheckAndResetHabitForNewDayUseCase
-import com.example.habittracker.domain.usecase.CheckOutHabitUseCase
-import com.example.habittracker.domain.usecase.DeleteHabitUseCase
-import com.example.habittracker.domain.usecase.GetAllHabitsUseCase
-import com.example.habittracker.domain.usecase.GetHabitDatesAsFlowUseCase
-import com.example.habittracker.domain.usecase.GetHabitDatesUseCase
+import com.example.habittracker.domain.repository.UserAuthRepository
+import com.google.firebase.auth.FirebaseAuth
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -72,57 +69,20 @@ object AppModule{
     fun provideHabitDateRepository(dateDao: HabitDateDao): HabitDateRepository{
         return HabitDateRepositoryImpl(dateDao)
     }
+    @Provides
+    @Singleton
+    fun provideUserAuthRepository(firebaseAuth: FirebaseAuthDataSource): UserAuthRepository{
+        return UserAuthRepositoryImpl(firebaseAuth)
+    }
 
     @Provides
     @Singleton
-    fun provideDeleteHabitUseCase(
-        repository: HabitRepository,
-        dateRepository: HabitDateRepository
-    ): DeleteHabitUseCase{
-        return DeleteHabitUseCase(repository,dateRepository)
-    }
+    fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
+
     @Provides
     @Singleton
-    fun provideAddHabitUseCase(
-        repository: HabitRepository
-    ): AddHabitUseCase{
-        return AddHabitUseCase(repository)
+    fun provideAuthRemoteDateSoure(auth: FirebaseAuth): FirebaseAuthDataSource {
+        return FirebaseAuthDataSource(auth)
     }
-    @Provides
-    @Singleton
-    fun provideCheckAndResetHabitForNewDayUseCase(
-        repository: HabitRepository,
-        preferencesRepository: PreferencesRepository
-    ): CheckAndResetHabitForNewDayUseCase{
-        return CheckAndResetHabitForNewDayUseCase(repository,preferencesRepository)
-    }
-    @Provides
-    @Singleton
-    fun provideCheckOutHabitUseCase(
-        repository: HabitRepository,
-        dateRepository: HabitDateRepository
-    ): CheckOutHabitUseCase{
-        return CheckOutHabitUseCase(repository,dateRepository)
-    }
-    @Provides
-    @Singleton
-    fun provideGetAllHabitsUseCase(
-        repository: HabitRepository
-    ): GetAllHabitsUseCase{
-        return GetAllHabitsUseCase(repository)
-    }
-    @Provides
-    @Singleton
-    fun provideGetHabitDatesAsFlowUseCase(
-        repository: HabitDateRepository
-    ): GetHabitDatesAsFlowUseCase{
-        return GetHabitDatesAsFlowUseCase(repository)
-    }
-    @Provides
-    @Singleton
-    fun provideGetHabitDatesUseCase(
-        repository: HabitDateRepository
-    ): GetHabitDatesUseCase {
-        return GetHabitDatesUseCase(repository)
-    }
+
 }

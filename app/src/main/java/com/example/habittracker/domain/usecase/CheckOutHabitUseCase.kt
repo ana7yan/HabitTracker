@@ -5,8 +5,9 @@ import com.example.habittracker.domain.model.HabitDate
 import com.example.habittracker.domain.repository.HabitDateRepository
 import com.example.habittracker.domain.repository.HabitRepository
 import java.time.LocalDate
+import javax.inject.Inject
 
-class CheckOutHabitUseCase(
+class CheckOutHabitUseCase @Inject constructor (
     private val repository: HabitRepository,
     private val dateRepository: HabitDateRepository,
 ) {
