@@ -11,6 +11,7 @@ class HabitMapper {
 fun HabitEntity.toDomain(): Habit {
     return Habit(
         id = id,
+        remoteId = remoteId,
         name = name,
         streak = streak,
         lastCompletedDate = lastCompletedDate.toString(),
@@ -21,6 +22,7 @@ fun HabitEntity.toDomain(): Habit {
 fun Habit.toData(): HabitEntity {
     return HabitEntity(
         id = id,
+        remoteId = remoteId,
         name = name,
         streak = streak,
         lastCompletedDate = lastCompletedDate.toString(),

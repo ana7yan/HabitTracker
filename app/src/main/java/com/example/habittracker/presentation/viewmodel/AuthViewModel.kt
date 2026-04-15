@@ -1,8 +1,10 @@
 package com.example.habittracker.presentation.viewmodel
 
 
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.habittracker.domain.usecase.DownloadHabitsFromFirebaseUseCase
 import com.example.habittracker.domain.usecase.LogInUseCase
 import com.example.habittracker.domain.usecase.LogOutUseCase
 import com.example.habittracker.domain.usecase.SignUpUseCase
@@ -13,6 +15,7 @@ import com.example.habittracker.presentation.state.LoginState
 import com.example.habittracker.presentation.state.RegisterState
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -25,6 +28,7 @@ class AuthViewModel @Inject constructor(
     private val logInUseCase: LogInUseCase,
     private val logOutUseCase: LogOutUseCase,
     private val signUpUseCase: SignUpUseCase,
+    private val downloadHabitsFromFirebaseUseCase: DownloadHabitsFromFirebaseUseCase,
     private val auth: FirebaseAuth,
 ) : ViewModel() {
 
@@ -59,7 +63,7 @@ class AuthViewModel @Inject constructor(
                 if (email.isBlank() || password.isBlank()) {
                     return
                 }
-                viewModelScope.launch {
+                viewModelScope.launch(Dispatchers.IO) {
                     val result = logInUseCase(email, password)
 
                     result.onSuccess { user ->
@@ -69,6 +73,7 @@ class AuthViewModel @Inject constructor(
                                 userName = user?.userName
                             )
                         }
+                        downloadHabitsFromFirebaseUseCase()
                     }.onFailure { exception ->
                         _loginState.update {
                             it.copy(

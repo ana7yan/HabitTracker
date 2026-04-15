@@ -36,4 +36,8 @@ class HabitDateRepositoryImpl(
         dateDao.deleteHabit(habitId)
     }
 
+    override suspend fun getAllDates(id: Int): List<String> {
+        return dateDao.getDatesOfHabit(id)
+    }
+
 }

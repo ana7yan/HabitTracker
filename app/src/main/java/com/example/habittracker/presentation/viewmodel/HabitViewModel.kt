@@ -14,6 +14,7 @@ import com.example.habittracker.domain.usecase.CheckOutHabitUseCase
 import com.example.habittracker.domain.usecase.DeleteHabitUseCase
 import com.example.habittracker.domain.usecase.GetAllHabitsUseCase
 import com.example.habittracker.domain.usecase.CheckAndResetHabitForNewDayUseCase
+import com.example.habittracker.domain.usecase.DownloadHabitsFromFirebaseUseCase
 import com.example.habittracker.domain.usecase.GetHabitDatesAsFlowUseCase
 import com.example.habittracker.domain.usecase.GetHabitDatesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalDate
@@ -45,6 +47,7 @@ class HabitViewModel @Inject constructor(
     private val checkAndResetHabitForNewDayUseCase: CheckAndResetHabitForNewDayUseCase,
     private val getHabitDatesUseCase: GetHabitDatesUseCase,
     private val getHabitDatesAsFlowUseCase: GetHabitDatesAsFlowUseCase,
+    private val downloadHabitsFromFirebaseUseCase: DownloadHabitsFromFirebaseUseCase
 ) : ViewModel() {
     private val _sortType = MutableStateFlow(SortType.NAME)
     private val _habits = _sortType
@@ -74,12 +77,15 @@ class HabitViewModel @Inject constructor(
 
     init {
         checkForNewDay()
+        viewModelScope.launch(Dispatchers.IO) {
+            downloadHabitsFromFirebaseUseCase()
+        }
         observeDayChange()
     }
 
     private fun observeDayChange() {
         viewModelScope.launch(Dispatchers.IO) {
-            while (true) {
+            while (isActive) {
                 val now = LocalDateTime.now()
                 val nextMidnight = now.toLocalDate().plusDays(1).atStartOfDay()
 
@@ -93,7 +99,7 @@ class HabitViewModel @Inject constructor(
     }
 
     fun checkForNewDay() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             checkAndResetHabitForNewDayUseCase()
         }
     }

@@ -7,10 +7,12 @@ import com.example.habittracker.domain.repository.HabitRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.example.habittracker.data.mapper.toDomain
+import com.example.habittracker.data.remote.FirebaseHabitDataSource
 
 class HabitRepositoryImpl(
     private val dao: HabitDao
 ) : HabitRepository {
+
     override suspend fun getAllHabits(): List<Habit> {
         return dao.getAll().map {
             it.toDomain()
