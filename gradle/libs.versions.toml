@@ -21,8 +21,6 @@ hiltNavigationCompose = "1.2.0"
 googleGmsGoogleServices = "4.4.4"
 firebaseFirestore = "26.2.0"
 firebaseBom = "33.9.0"
-room = "2.8.4"
-desugar = "2.0.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -52,11 +50,6 @@ hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", ve
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth"}
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
-firebase-database = { group = "com.google.firebase", name = "firebase-database" }
-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
-android-desugar = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugar" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -66,8 +59,3 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }
-google-services = { id = "com.google.gms.google-services", version = "4.4.2" }
-
-[bundles]
-# Optional: Create a bundle to add multiple Room dependencies in one line
-room = ["room-runtime", "room-ktx"]

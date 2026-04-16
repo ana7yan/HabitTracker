@@ -9,5 +9,4 @@ interface HabitDateRepository {
     suspend fun upsertDate(habitDate: HabitDate)
     fun getDatesOfHabitInRangeAsFlow(id: Int, sevenDaysAgo: LocalDate, today: LocalDate): Flow<List<LocalDate>>
     fun deleteHabit(habitId: Int)
-    suspend fun getAllDates(id: Int): List<String>
 }

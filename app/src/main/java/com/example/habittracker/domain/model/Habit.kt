@@ -2,7 +2,6 @@ package com.example.habittracker.domain.model
 
 data class Habit(
     val id: Int = 0,
-    val remoteId: String? = null,
     val name: String,
     val streak: Int = 0,
     val lastCompletedDate: String = "",

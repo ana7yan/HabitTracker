@@ -48,9 +48,4 @@ class UserAuthRepositoryImpl(
         return firebaseAuthDataSource.getCurrentUser()
     }
 
-    override suspend fun getCurrentUserId(): String? {
-        return  firebaseAuthDataSource.getCurrentUser()?.id
-    }
-
-
 }

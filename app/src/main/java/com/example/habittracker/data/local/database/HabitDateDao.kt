@@ -47,5 +47,5 @@ interface HabitDateDao {
 """)
     fun getDatesOfHabit(
         habitId: Int
-    ): List<String>
+    ): List<LocalDate>
 }
