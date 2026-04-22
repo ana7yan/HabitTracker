@@ -159,10 +159,11 @@ class AuthViewModel @Inject constructor(
                 if (email.isBlank() || userName.isBlank() || password.isBlank()) {
                     return
                 }
-                viewModelScope.launch {
+                viewModelScope.launch(Dispatchers.IO) {
                     val result = signUpUseCase(email, userName, password)
 
                     result.onSuccess {
+                        syncLocalToRemoteUseCase()
                         _registerState.update { it.copy(isRegistered = true) }
                         _loginState.update {
                             it.copy(
