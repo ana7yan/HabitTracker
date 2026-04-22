@@ -23,6 +23,9 @@ class HabitDateRepositoryImpl(
     override suspend fun upsertDate(habitDate: HabitDate) {
         dateDao.upsertDate(habitDate.toData())
     }
+    override suspend fun upsertDates(habitDate: List<HabitDate>) {
+        dateDao.upsertDates(habitDate.map { it.toData() })
+    }
 
     override fun getDatesOfHabitInRangeAsFlow(
         id: Int,

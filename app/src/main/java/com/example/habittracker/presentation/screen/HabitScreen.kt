@@ -53,7 +53,7 @@ fun HabitScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    actionIconContentColor = MaterialTheme.colorScheme.primary
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
                 ),
                 title = {
                     Text("Habit Tracker")

@@ -1,6 +1,7 @@
 package com.example.habittracker.presentation.viewmodel
 
 
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.habittracker.presentation.event.HabitDateEvent
@@ -14,7 +15,6 @@ import com.example.habittracker.domain.usecase.CheckOutHabitUseCase
 import com.example.habittracker.domain.usecase.DeleteHabitUseCase
 import com.example.habittracker.domain.usecase.GetAllHabitsUseCase
 import com.example.habittracker.domain.usecase.CheckAndResetHabitForNewDayUseCase
-import com.example.habittracker.domain.usecase.DownloadHabitsFromFirebaseUseCase
 import com.example.habittracker.domain.usecase.GetHabitDatesAsFlowUseCase
 import com.example.habittracker.domain.usecase.GetHabitDatesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -46,8 +46,7 @@ class HabitViewModel @Inject constructor(
     private val deleteHabitUseCase: DeleteHabitUseCase,
     private val checkAndResetHabitForNewDayUseCase: CheckAndResetHabitForNewDayUseCase,
     private val getHabitDatesUseCase: GetHabitDatesUseCase,
-    private val getHabitDatesAsFlowUseCase: GetHabitDatesAsFlowUseCase,
-    private val downloadHabitsFromFirebaseUseCase: DownloadHabitsFromFirebaseUseCase
+    private val getHabitDatesAsFlowUseCase: GetHabitDatesAsFlowUseCase
 ) : ViewModel() {
     private val _sortType = MutableStateFlow(SortType.NAME)
     private val _habits = _sortType
@@ -77,9 +76,6 @@ class HabitViewModel @Inject constructor(
 
     init {
         checkForNewDay()
-        viewModelScope.launch(Dispatchers.IO) {
-            downloadHabitsFromFirebaseUseCase()
-        }
         observeDayChange()
     }
 
@@ -209,15 +205,32 @@ class HabitViewModel @Inject constructor(
                     name = name,
                     creationDate = LocalDate.now().toString()
                 )
-
                 viewModelScope.launch(Dispatchers.IO) {
-                    addHabitUseCase(habit)
-                }
-                _state.update {
-                    it.copy(
-                        isAddingHabit = false,
-                        name = ""
-                    )
+                    var doesContainName = false
+                    state.value.habits.forEach { habit->
+                        if(habit.name == name){
+                            doesContainName = true
+                        }
+                    }
+                    if(doesContainName){
+                        _state.update {
+                            it.copy(
+                                addingError = "That habit already exists"
+                            )
+                        }
+                    }else{
+                        addHabitUseCase(habit)
+                            _state.update {
+                                it.copy(
+                                    isAddingHabit = false,
+                                    name = "",
+                                    addingError = null
+                                )
+                            }
+                        }
+
+
+
                 }
 
             }

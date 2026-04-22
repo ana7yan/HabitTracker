@@ -29,12 +29,19 @@ class HabitRepositoryImpl(
             .map { list -> list.map { it.toDomain() } }
     }
 
-    override suspend fun upsertHabit(habit: Habit) {
+    override suspend fun upsertHabit(habit: Habit){
         dao.upsertHabit(habit.toData())
+    }
+
+    override suspend fun insertHabit(habit: Habit): Int {
+        return dao.insertHabit(habit.toData()).toInt()
     }
 
     override suspend fun updateHabit(habit: Habit) {
         dao.updateHabit(habit.toData())
+    }
+    override suspend fun updateHabits(habit: List<Habit>) {
+        dao.updateHabits(habit.map { it.toData() })
     }
 
     override suspend fun deleteHabit(habit: Habit) {

@@ -7,5 +7,6 @@ data class Habit(
     val streak: Int = 0,
     val lastCompletedDate: String = "",
     val isCompletedToday: Boolean = false,
-    val creationDate: String = ""
+    val creationDate: String = "",
+    val checkedDates: List<String> = emptyList()
 )

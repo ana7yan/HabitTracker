@@ -2,6 +2,8 @@ package com.example.habittracker.data.local.database
 
 import androidx.room.Dao
 import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import androidx.room.Upsert
@@ -28,9 +30,14 @@ interface HabitDao{
 
     @Update
     suspend fun updateHabit(habit: HabitEntity)
+    @Update
+    suspend fun updateHabits(habits: List<HabitEntity>)
 
     @Upsert
-    fun upsertHabit(habit: HabitEntity)
+    suspend fun upsertHabit(habit: HabitEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertHabit(habit: HabitEntity): Long
 
     @Delete
     fun delete(habit: HabitEntity)

@@ -29,6 +29,24 @@ class FirebaseHabitDataSource @Inject constructor(
         }
         return remoteId
     }
+    override suspend fun updateHabitsInRTDB(uid: String, habitsToSync: List<FirebaseHabitUnit>) {
+        val updateMap = mutableMapOf<String, Any?>()
+        habitsToSync.forEach { habit ->
+            val path = "$uid/habits/${habit.remoteId}"
+            val habitData = mapOf(
+                "streak" to habit.streak,
+                "name" to habit.name,
+                "remoteId" to habit.remoteId,
+                "checkedDates" to habit.checkedDates,
+                "creationDate" to habit.creationDate
+            )
+            updateMap[path] = habitData
+        }
+
+        if (updateMap.isNotEmpty()) {
+            db.getReference("users").updateChildren(updateMap).await()
+        }
+    }
 
     override suspend fun deleteHabit(userId: String, habitId: String) {
         db.getReference("users")
@@ -66,7 +84,7 @@ class FirebaseHabitDataSource @Inject constructor(
         streak: Int,
         dates: List<String>
     ) {
-        val updates = mapOf<String, Any>(
+        val updates = mapOf(
             "streak" to streak,
             "checkedDates" to dates
         )

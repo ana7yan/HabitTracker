@@ -1,6 +1,7 @@
 package com.example.habittracker.domain.repository
 
 import com.example.habittracker.data.model.FirebaseHabitUnit
+import com.example.habittracker.domain.model.Habit
 import kotlinx.coroutines.flow.Flow
 
 interface HabitRemoteRepository {
@@ -18,5 +19,10 @@ interface HabitRemoteRepository {
         streak: Int,
         dates: List<String>,
     )
+    suspend fun updateHabitsInRTDB(
+        userId: String,
+        habitsToSync: List<Habit>
+    )
     suspend fun observeHabits(userId: String): Flow<List<FirebaseHabitUnit>>
+    suspend fun getHabits(userId: String): List<Habit>
 }

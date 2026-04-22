@@ -14,6 +14,7 @@ class AddHabitUseCase @Inject constructor (
 ){
     suspend operator fun invoke(habit: Habit){
         val uid = authRepository.getCurrentUserId()
+        val updatedHabit: Habit
         if(uid != null){
             val remoteHabit = FirebaseHabitUnit(
                 name = habit.name,
@@ -22,12 +23,12 @@ class AddHabitUseCase @Inject constructor (
                 checkedDates = emptyList()
             )
             val remoteId = firebaseRepository.addHabitToDB(uid,remoteHabit)
-            val updatedHabit = habit.copy(
+            updatedHabit = habit.copy(
                 remoteId = remoteId
             )
-            repository.upsertHabit(updatedHabit)
-            return
+        }else{
+            updatedHabit = habit
         }
-        repository.upsertHabit(habit)
+        repository.upsertHabit(updatedHabit)
     }
 }

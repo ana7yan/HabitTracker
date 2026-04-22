@@ -133,7 +133,7 @@ fun UserSignupScreen(
                                 id = if (passwordVisible) R.drawable.invisible else R.drawable.visible
                             ),
                             contentDescription = null,
-                            tint = Color.Black
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 },

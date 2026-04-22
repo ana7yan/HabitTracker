@@ -11,9 +11,11 @@ interface HabitRepository {
     suspend fun getHabitsOrderedByStreak(): Flow<List<Habit>>
 
     suspend fun upsertHabit(habit: Habit)
+    suspend fun insertHabit(habit: Habit): Int
     suspend fun updateHabit(habit: Habit)
 
     suspend fun deleteHabit(habit: Habit)
+    suspend fun updateHabits(habits: List<Habit>)
 
 
 

@@ -1,13 +1,16 @@
 package com.example.habittracker.presentation.viewmodel
 
 
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.habittracker.domain.usecase.DownloadHabitsFromFirebaseUseCase
+import com.example.habittracker.domain.usecase.GetAllHabitsUseCase
+import com.example.habittracker.domain.usecase.GetAllRemoteHabitsUseCase
 import com.example.habittracker.domain.usecase.LogInUseCase
 import com.example.habittracker.domain.usecase.LogOutUseCase
+import com.example.habittracker.domain.usecase.MergeLocalAndRemoteDatabasesUseCase
 import com.example.habittracker.domain.usecase.SignUpUseCase
+import com.example.habittracker.domain.usecase.SyncLocalToRemoteUseCase
+import com.example.habittracker.domain.usecase.SyncRemoteToLocalUseCase
 import com.example.habittracker.presentation.event.AccountEvent
 import com.example.habittracker.presentation.event.LoginEvent
 import com.example.habittracker.presentation.event.RegisterEvent
@@ -28,7 +31,11 @@ class AuthViewModel @Inject constructor(
     private val logInUseCase: LogInUseCase,
     private val logOutUseCase: LogOutUseCase,
     private val signUpUseCase: SignUpUseCase,
-    private val downloadHabitsFromFirebaseUseCase: DownloadHabitsFromFirebaseUseCase,
+    private val mergeLocalAndRemoteDatabasesUseCase: MergeLocalAndRemoteDatabasesUseCase,
+    private val syncRemoteToLocalUseCase: SyncRemoteToLocalUseCase,
+    private val syncLocalToRemoteUseCase: SyncLocalToRemoteUseCase,
+    private val getAllHabitsUseCase: GetAllHabitsUseCase,
+    private val getAllRemoteHabitsUseCase: GetAllRemoteHabitsUseCase,
     private val auth: FirebaseAuth,
 ) : ViewModel() {
 
@@ -56,6 +63,12 @@ class AuthViewModel @Inject constructor(
                     )
                 }
             }
+            LoginEvent.ChangeLoginState ->{
+                val user = auth.currentUser
+                _loginState.update {
+                    it.copy(isLoggedIn = user != null)
+                }
+            }
 
             LoginEvent.Login -> {
                 val email = loginState.value.email
@@ -65,15 +78,23 @@ class AuthViewModel @Inject constructor(
                 }
                 viewModelScope.launch(Dispatchers.IO) {
                     val result = logInUseCase(email, password)
-
                     result.onSuccess { user ->
-                        _loginState.update {
-                            it.copy(
-                                isLoggedIn = true,
-                                userName = user?.userName
-                            )
+                        val isRemoteDbEmpty = getAllRemoteHabitsUseCase().isEmpty()
+                        val isLocalDbEmpty = getAllHabitsUseCase().isEmpty()
+
+                        if (!isRemoteDbEmpty && !isLocalDbEmpty) {
+                            _loginState.update { it.copy(shouldShowDialog = true) }
+                        } else {
+                            if (!isRemoteDbEmpty){
+                                syncRemoteToLocalUseCase()
+                                _loginState.update { it.copy(isLoggedIn = true) }
+                            }
+                            if (!isLocalDbEmpty){
+                                syncLocalToRemoteUseCase()
+                                _loginState.update { it.copy(isLoggedIn = true) }
+                            }
                         }
-                        downloadHabitsFromFirebaseUseCase()
+                        _loginState.update { it.copy(userName = user?.userName) }
                     }.onFailure { exception ->
                         _loginState.update {
                             it.copy(
@@ -81,6 +102,42 @@ class AuthViewModel @Inject constructor(
                             )
                         }
                     }
+                }
+            }
+
+            LoginEvent.HideDialog -> {
+                viewModelScope.launch(Dispatchers.IO) {
+                    when (loginState.value.option) {
+                        0 -> mergeLocalAndRemoteDatabasesUseCase()
+                        1 -> syncRemoteToLocalUseCase()
+                        2 -> syncLocalToRemoteUseCase()
+                    }
+                    _loginState.update {
+                        it.copy(
+                            isLoggedIn = true,
+                            shouldShowDialog = false,
+                            option = -1
+                        )
+                    }
+                }
+            }
+
+            is LoginEvent.ChooseOption -> {
+                _loginState.update {
+                    it.copy(
+                        option = event.option
+                    )
+                }
+            }
+
+            LoginEvent.StartLoading -> {
+                _loginState.update {
+                    it.copy(isLoading = true)
+                }
+            }
+            LoginEvent.StopLoading -> {
+                _loginState.update {
+                    it.copy(isLoading = false)
                 }
             }
         }
@@ -154,14 +211,19 @@ class AuthViewModel @Inject constructor(
             AccountEvent.LogOut -> {
                 viewModelScope.launch {
                     logOutUseCase()
-                    val isLoggedIn = auth.currentUser != null
-                    _loginState.update {
-                        it.copy(
-                            isLoggedIn = isLoggedIn,
-                            password = "",
-                            userName = ""
-                        )
+                    auth.addAuthStateListener { firebaseAuth ->
+                        _loginState.update {
+                            it.copy(
+                                isLoggedIn = firebaseAuth.currentUser != null,
+                                password = "",
+                                userName = "",
+                                option = -1,
+                                error = null,
+                                shouldShowDialog = false
+                            )
+                        }
                     }
+
                 }
             }
         }

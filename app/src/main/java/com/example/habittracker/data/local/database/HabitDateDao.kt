@@ -21,6 +21,9 @@ interface HabitDateDao {
     @Upsert
     fun upsertDate(habitDate: HabitDateEntity)
 
+    @Upsert
+    fun upsertDates(habitDate: List<HabitDateEntity>)
+
     @Query("DELETE FROM habitdateentity WHERE habitId LIKE :habitId")
     fun deleteHabit(habitId: Int)
 

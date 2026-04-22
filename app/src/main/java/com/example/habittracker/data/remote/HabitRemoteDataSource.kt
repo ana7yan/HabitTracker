@@ -10,4 +10,5 @@ interface HabitRemoteDataSource {
     fun observeHabits(userId: String): Flow<List<FirebaseHabitUnit>>
 
     suspend fun updateHabitStreakAndDates(userId: String, habitId: String, streak: Int, dates: List<String>)
+    suspend fun updateHabitsInRTDB(uid: String, habitsToSync: List<FirebaseHabitUnit>)
 }
