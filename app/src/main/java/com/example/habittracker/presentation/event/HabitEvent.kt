@@ -1,7 +1,7 @@
 package com.example.habittracker.presentation.event
 
-import com.example.habittracker.domain.model.Habit
-import com.example.habittracker.domain.model.SortType
+import com.example.domain.domain.model.Habit
+import com.example.domain.domain.model.SortType
 
 sealed interface HabitEvent {
     object SaveHabit: HabitEvent

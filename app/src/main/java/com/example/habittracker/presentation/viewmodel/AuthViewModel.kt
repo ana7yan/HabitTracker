@@ -3,14 +3,14 @@ package com.example.habittracker.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.habittracker.domain.usecase.GetAllHabitsUseCase
-import com.example.habittracker.domain.usecase.GetAllRemoteHabitsUseCase
-import com.example.habittracker.domain.usecase.LogInUseCase
-import com.example.habittracker.domain.usecase.LogOutUseCase
-import com.example.habittracker.domain.usecase.MergeLocalAndRemoteDatabasesUseCase
-import com.example.habittracker.domain.usecase.SignUpUseCase
-import com.example.habittracker.domain.usecase.SyncLocalToRemoteUseCase
-import com.example.habittracker.domain.usecase.SyncRemoteToLocalUseCase
+import com.example.domain.domain.usecase.GetAllHabitsUseCase
+import com.example.domain.domain.usecase.GetAllRemoteHabitsUseCase
+import com.example.domain.domain.usecase.LogInUseCase
+import com.example.domain.domain.usecase.LogOutUseCase
+import com.example.domain.domain.usecase.MergeLocalAndRemoteDatabasesUseCase
+import com.example.domain.domain.usecase.SignUpUseCase
+import com.example.domain.domain.usecase.SyncLocalToRemoteUseCase
+import com.example.domain.domain.usecase.SyncRemoteToLocalUseCase
 import com.example.habittracker.presentation.event.AccountEvent
 import com.example.habittracker.presentation.event.LoginEvent
 import com.example.habittracker.presentation.event.RegisterEvent
@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.onSuccess
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(

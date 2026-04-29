@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -20,22 +19,22 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.compose.runtime.getValue
+import com.example.domain.domain.model.Habit
+import com.example.domain.domain.model.SortType
+import com.example.habittracker.HabitId
 import com.example.habittracker.presentation.component.AddHabitDialog
 import com.example.habittracker.presentation.event.HabitEvent
-import com.example.habittracker.HabitId
-import com.example.habittracker.domain.model.Habit
 import com.example.habittracker.presentation.state.HabitState
-import com.example.habittracker.domain.model.SortType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
