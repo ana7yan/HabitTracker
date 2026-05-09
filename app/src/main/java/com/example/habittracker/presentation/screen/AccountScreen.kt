@@ -45,7 +45,9 @@ fun AccountScreen(
                 navigationIcon = {
                     IconButton(
                         onClick ={
-                            navController.navigate("main")
+                            navController.navigate("main"){
+                                popUpTo("account"){inclusive = true}
+                            }
                         }
                     ) {
                         Icon( imageVector = Icons.Default.KeyboardArrowLeft,
@@ -85,7 +87,9 @@ fun AccountScreen(
                     onEvent(
                         AccountEvent.LogOut
                     )
-                    navController.navigate("main")
+                    navController.navigate("main"){
+                        popUpTo("account"){ inclusive = true}
+                    }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {

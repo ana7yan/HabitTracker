@@ -3,10 +3,14 @@ package com.example.habittracker.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.domain.domain.model.User
+import com.example.domain.domain.usecase.CheckIfVerifiedUseCase
 import com.example.domain.domain.usecase.GetAllHabitsUseCase
 import com.example.domain.domain.usecase.GetAllRemoteHabitsUseCase
 import com.example.domain.domain.usecase.LogInUseCase
+import com.example.domain.domain.usecase.LogInViaFacebookUseCase
 import com.example.domain.domain.usecase.LogOutUseCase
+import com.example.domain.domain.usecase.LoginViaGoogleUseCase
 import com.example.domain.domain.usecase.MergeLocalAndRemoteDatabasesUseCase
 import com.example.domain.domain.usecase.SignUpUseCase
 import com.example.domain.domain.usecase.SyncLocalToRemoteUseCase
@@ -14,6 +18,7 @@ import com.example.domain.domain.usecase.SyncRemoteToLocalUseCase
 import com.example.habittracker.presentation.event.AccountEvent
 import com.example.habittracker.presentation.event.LoginEvent
 import com.example.habittracker.presentation.event.RegisterEvent
+import com.example.habittracker.presentation.event.VerificationEvent
 import com.example.habittracker.presentation.state.LoginState
 import com.example.habittracker.presentation.state.RegisterState
 import com.google.firebase.auth.FirebaseAuth
@@ -25,7 +30,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.onSuccess
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
@@ -37,7 +41,10 @@ class AuthViewModel @Inject constructor(
     private val syncLocalToRemoteUseCase: SyncLocalToRemoteUseCase,
     private val getAllHabitsUseCase: GetAllHabitsUseCase,
     private val getAllRemoteHabitsUseCase: GetAllRemoteHabitsUseCase,
-    private val auth: FirebaseAuth,
+    private val loginViaGoogleUseCase: LoginViaGoogleUseCase,
+    private val logInViaFacebookUseCase: LogInViaFacebookUseCase,
+    private val checkIfVerifiedUseCase: CheckIfVerifiedUseCase,
+    private val auth: FirebaseAuth
 ) : ViewModel() {
 
     private val _loginState = MutableStateFlow(LoginState())
@@ -79,30 +86,21 @@ class AuthViewModel @Inject constructor(
                 }
                 viewModelScope.launch(Dispatchers.IO) {
                     val result = logInUseCase(email, password)
-                    result.onSuccess { user ->
-                        val isRemoteDbEmpty = getAllRemoteHabitsUseCase().isEmpty()
-                        val isLocalDbEmpty = getAllHabitsUseCase().isEmpty()
+                    onLoginStateChange(result)
+                }
+            }
 
-                        if (!isRemoteDbEmpty && !isLocalDbEmpty) {
-                            _loginState.update { it.copy(shouldShowDialog = true) }
-                        } else {
-                            if (!isRemoteDbEmpty){
-                                syncRemoteToLocalUseCase()
-                                _loginState.update { it.copy(isLoggedIn = true) }
-                            }
-                            if (!isLocalDbEmpty){
-                                syncLocalToRemoteUseCase()
-                                _loginState.update { it.copy(isLoggedIn = true) }
-                            }
-                        }
-                        _loginState.update { it.copy(userName = user?.userName) }
-                    }.onFailure { exception ->
-                        _loginState.update {
-                            it.copy(
-                                error = exception.message ?: "Unknown Error"
-                            )
-                        }
-                    }
+            is LoginEvent.LoginViaGoogle ->{
+                viewModelScope.launch(Dispatchers.IO) {
+                    val result = loginViaGoogleUseCase(event.idToken)
+                    onLoginStateChange(result)
+                }
+            }
+
+            is LoginEvent.LoginViaFacebook ->{
+                viewModelScope.launch(Dispatchers.IO) {
+                    val result = logInViaFacebookUseCase(event.token)
+                    onLoginStateChange(result)
                 }
             }
 
@@ -140,10 +138,46 @@ class AuthViewModel @Inject constructor(
                 _loginState.update {
                     it.copy(isLoading = false)
                 }
+                viewModelScope.launch {
+                    val isVerified = checkIfVerifiedUseCase() ?: false
+                    auth.addAuthStateListener {
+                        _loginState.update {
+                            it.copy(
+                                isVerified= isVerified
+                            )
+                        }
+                    }
+                }
+
             }
         }
     }
+    suspend fun onLoginStateChange(result: Result<User?>){
+        result.onSuccess { user ->
+            val isRemoteDbEmpty = getAllRemoteHabitsUseCase().isEmpty()
+            val isLocalDbEmpty = getAllHabitsUseCase().isEmpty()
 
+            if (!isRemoteDbEmpty && !isLocalDbEmpty) {
+                _loginState.update { it.copy(shouldShowDialog = true) }
+            } else {
+                if (!isRemoteDbEmpty){
+                    syncRemoteToLocalUseCase()
+                    _loginState.update { it.copy(isLoggedIn = true) }
+                }
+                if (!isLocalDbEmpty){
+                    syncLocalToRemoteUseCase()
+                    _loginState.update { it.copy(isLoggedIn = true) }
+                }
+            }
+            _loginState.update { it.copy(userName = user?.userName) }
+        }.onFailure { exception ->
+            _loginState.update {
+                it.copy(
+                    error = exception.message ?: "Unknown Error"
+                )
+            }
+        }
+    }
     private val _registerState = MutableStateFlow(RegisterState())
     val registerState = _registerState.stateIn(
         viewModelScope,
@@ -222,6 +256,46 @@ class AuthViewModel @Inject constructor(
                                 option = -1,
                                 error = null,
                                 shouldShowDialog = false
+                            )
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
+    fun onVerificationEvent(event: VerificationEvent){
+        when(event){
+            VerificationEvent.checkIfVerified -> {
+                viewModelScope.launch {
+                    auth.currentUser?.reload()
+                    val isVerified = checkIfVerifiedUseCase()
+                    _loginState.update {
+                        it.copy(
+                            isVerified= isVerified
+                        )
+                    }
+                }
+            }
+            VerificationEvent.logOut -> {
+                viewModelScope.launch {
+                    _loginState.update {
+                        it.copy(
+                            isLoading = true
+                        )
+                    }
+                    logOutUseCase()
+                    auth.addAuthStateListener { firebaseAuth ->
+                        _loginState.update {
+                            it.copy(
+                                isLoggedIn = firebaseAuth.currentUser != null,
+                                password = "",
+                                userName = "",
+                                option = -1,
+                                error = null,
+                                shouldShowDialog = false,
+                                isLoading = false
                             )
                         }
                     }

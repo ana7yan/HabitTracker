@@ -21,18 +21,25 @@ class MergeLocalAndRemoteDatabasesUseCase @Inject constructor(
     suspend operator fun invoke() {
         val uid = authRepository.getCurrentUserId()
         if(uid == null) return
-        val localHabits = habitRepository.getAllHabits().associateBy { it.name }
-        val remoteHabits = habitRemoteRepository.observeHabits(uid).first().associateBy { it.name }
+        val localHabits = habitRepository.getAllHabits().associateBy { it.name.replace(" ", "") }
+        val remoteHabits = habitRemoteRepository.observeHabits(uid).first().associateBy { it.name.replace(" ", "") }
         val updatedHabits = mutableListOf<Habit>()
         val updatedDates = mutableListOf<HabitDate>()
         localHabits.forEach { localHabitPair ->
             val remoteHabit = remoteHabits[localHabitPair.key]
             val localHabit = localHabitPair.value
             if (remoteHabit != null) {
-                val streak =
-                    if (remoteHabit.streak > localHabit.streak) remoteHabit.streak else localHabit.streak
                 val localDates = habitDateRepository.getAllDates(localHabit.id)
                 val dates = (localDates + remoteHabit.checkedDates).distinct()
+                var streak = 0
+                var currentDate = LocalDate.now().minusDays(1)
+                while (dates.contains(currentDate.toString())) {
+                    streak++
+                    currentDate = currentDate.minusDays(1)
+                }
+                if(dates.contains(LocalDate.now().toString())){
+                    streak++
+                }
                 val newDates = (dates - localDates)
                 newDates.forEach {
                     updatedDates.add(HabitDate(habitId = localHabit.id, date =  LocalDate.parse(it)))
@@ -50,7 +57,7 @@ class MergeLocalAndRemoteDatabasesUseCase @Inject constructor(
                 val habit = Habit(
                     id = localHabit.id,
                     remoteId = remoteHabit.remoteId,
-                    name = localHabitPair.key,
+                    name = localHabit.name,
                     streak = streak,
                     lastCompletedDate = lastCompletedDate,
                     isCompletedToday = isCompletedToday,
@@ -61,7 +68,7 @@ class MergeLocalAndRemoteDatabasesUseCase @Inject constructor(
             } else {
                 val dates = habitDateRepository.getAllDates(localHabit.id)
                 val firebaseHabit = Habit(
-                    name = localHabitPair.key,
+                    name = localHabit.name,
                     streak = localHabit.streak,
                     creationDate = localHabit.creationDate,
                     checkedDates = dates,

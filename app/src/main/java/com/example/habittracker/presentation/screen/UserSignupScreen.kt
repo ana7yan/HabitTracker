@@ -45,7 +45,7 @@ fun UserSignupScreen(
 ) {
     LaunchedEffect(state.isRegistered) {
         if (state.isRegistered) {
-            navController.navigate("account") {
+            navController.navigate("verification") {
                 popUpTo("register") { inclusive = true }
             }
         }
@@ -58,7 +58,9 @@ fun UserSignupScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            navController.navigate("login")
+                            navController.navigate("login"){
+                                popUpTo("register") { inclusive = true }
+                            }
                         }
                     ) {
                         Icon(

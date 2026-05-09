@@ -12,12 +12,7 @@ class UserAuthRepositoryImpl(
         password: String,
     ): Result<User> {
         return try {
-            val uid = firebaseAuthDataSource.logIn(email, password)
-            Result.success(User(
-                id = uid,
-                userName = null,
-                email = email,
-            ))
+            firebaseAuthDataSource.logIn(email, password)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -34,6 +29,7 @@ class UserAuthRepositoryImpl(
                 id = uid,
                 userName = userName,
                 email = email,
+                isVerified = false
             ))
         } catch (e: Exception) {
             Result.failure(e)

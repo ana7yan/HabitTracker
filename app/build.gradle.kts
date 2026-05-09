@@ -13,6 +13,10 @@ android {
     namespace = "com.example.habittracker"
     compileSdk = 36
 
+    buildFeatures {
+        compose = true
+    }
+
     defaultConfig {
         applicationId = "com.example.habittracker"
         minSdk = 26
@@ -40,9 +44,6 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-    buildFeatures {
-        compose = true
-    }
 }
 
 dependencies {
@@ -57,6 +58,13 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
     implementation(libs.firebase.auth)
     implementation(platform(libs.firebase.bom))
+    implementation(libs.compose.material.icons.extended)
+    implementation(libs.compose.material.icons.core)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.googleid)
+    implementation(libs.facebook.login)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
