@@ -9,6 +9,6 @@ interface HabitRemoteDataSource {
 
     fun observeHabits(userId: String): Flow<List<FirebaseHabitUnit>>
 
-    suspend fun updateHabitStreakAndDates(userId: String, habitId: String, streak: Int, dates: List<String>)
+    suspend fun updateHabit(userId: String, habit: FirebaseHabitUnit)
     suspend fun updateHabitsInRTDB(uid: String, habitsToSync: List<FirebaseHabitUnit>)
 }

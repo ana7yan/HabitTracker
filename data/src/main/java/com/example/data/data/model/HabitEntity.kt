@@ -19,4 +19,7 @@ data class HabitEntity(
     val lastCompletedDate: String? = null,
     val isCompletedToday: Boolean = false,
     val creationDate: String,
+    val hasReminder: Boolean = false,
+    val reminderHour: Int = 0,
+    val reminderMinute: Int = 0
 )

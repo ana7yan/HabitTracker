@@ -1,29 +1,35 @@
 package com.example.habittracker.presentation.viewmodel
 
 
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.habittracker.presentation.event.HabitDateEvent
-import com.example.habittracker.presentation.state.HabitDateState
-import com.example.habittracker.presentation.event.HabitEvent
-import com.example.habittracker.presentation.state.HabitState
-import com.example.domain.domain.model.SortType
 import com.example.domain.domain.model.Habit
+import com.example.domain.domain.model.SortType
+import com.example.domain.domain.sceduler.NotificationPermissionChecker
 import com.example.domain.domain.usecase.AddHabitUseCase
+import com.example.domain.domain.usecase.AddReminderUseCase
+import com.example.domain.domain.usecase.CheckAndResetHabitForNewDayUseCase
 import com.example.domain.domain.usecase.CheckOutHabitUseCase
 import com.example.domain.domain.usecase.DeleteHabitUseCase
+import com.example.domain.domain.usecase.DeleteReminderUseCase
 import com.example.domain.domain.usecase.GetAllHabitsUseCase
-import com.example.domain.domain.usecase.CheckAndResetHabitForNewDayUseCase
 import com.example.domain.domain.usecase.GetHabitDatesAsFlowUseCase
 import com.example.domain.domain.usecase.GetHabitDatesUseCase
+import com.example.habittracker.presentation.event.HabitDateEvent
+import com.example.habittracker.presentation.event.HabitEvent
+import com.example.habittracker.presentation.event.UiEvent
+import com.example.habittracker.presentation.state.HabitDateState
+import com.example.habittracker.presentation.state.HabitState
+import com.example.habittracker.presentation.state.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -46,8 +52,13 @@ class HabitViewModel @Inject constructor(
     private val deleteHabitUseCase: DeleteHabitUseCase,
     private val checkAndResetHabitForNewDayUseCase: CheckAndResetHabitForNewDayUseCase,
     private val getHabitDatesUseCase: GetHabitDatesUseCase,
-    private val getHabitDatesAsFlowUseCase: GetHabitDatesAsFlowUseCase
+    private val getHabitDatesAsFlowUseCase: GetHabitDatesAsFlowUseCase,
+    private val addReminderUseCase: AddReminderUseCase,
+    private val deleteReminderUseCase: DeleteReminderUseCase,
+    private val notificationPermissionChecker: NotificationPermissionChecker,
 ) : ViewModel() {
+    private val _uiEvent = MutableSharedFlow<UiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow()
     private val _sortType = MutableStateFlow(SortType.NAME)
     private val _habits = _sortType
         .flatMapLatest { sortType ->
@@ -72,15 +83,22 @@ class HabitViewModel @Inject constructor(
 
     private val _dateState = MutableStateFlow(HabitDateState())
     val dateState = _dateState.asStateFlow()
+    private val _uiState = MutableStateFlow(UiState())
+    val uiState = _uiState.asStateFlow()
 
 
     init {
-        checkForNewDay()
+        _uiState.update {
+            it.copy(
+                areNotificationsOn = notificationPermissionChecker.areNotificationsEnabled()
+            )
+        }
         observeDayChange()
     }
 
     private fun observeDayChange() {
         viewModelScope.launch(Dispatchers.IO) {
+            checkAndResetHabitForNewDayUseCase()
             while (isActive) {
                 val now = LocalDateTime.now()
                 val nextMidnight = now.toLocalDate().plusDays(1).atStartOfDay()
@@ -93,16 +111,41 @@ class HabitViewModel @Inject constructor(
             }
         }
     }
-
-    fun checkForNewDay() {
-        viewModelScope.launch(Dispatchers.IO) {
-            checkAndResetHabitForNewDayUseCase()
+    fun onUiEvent(event: UiEvent) {
+        when (event) {
+            UiEvent.RequestNotificationPermission -> {
+                viewModelScope.launch {
+                    _uiEvent.emit(UiEvent.RequestNotificationPermission)
+                }
+            }
         }
     }
 
+    fun onNotificationPermissionResult(granted: Boolean) {
+        if (granted) {
+            _uiState.update {
+                it.copy(
+                    areNotificationsOn = true
+                )
+            }
+        }
+    }
 
     fun onDateEvent(event: HabitDateEvent) {
         when (event) {
+            is HabitDateEvent.LoadHabit -> {
+                viewModelScope.launch {
+                    val habit = getHabitById(event.habitId) ?: return@launch
+                    _dateState.update {
+                        it.copy(
+                            hasReminder = habit.hasReminder,
+                            reminderHour = habit.reminderHour,
+                            reminderMinute = habit.reminderMinute
+                        )
+                    }
+                }
+            }
+
             is HabitDateEvent.ThisMonth -> {
                 val currentState = _dateState.value
                 viewModelScope.launch(Dispatchers.IO) {
@@ -171,6 +214,51 @@ class HabitViewModel @Inject constructor(
                 }
 
             }
+
+            HabitDateEvent.CloseTimePicker -> {
+                _dateState.update {
+                    it.copy(
+                        isTimePickerVisible = false
+                    )
+                }
+            }
+
+            HabitDateEvent.OpenTimePicker -> {
+                _dateState.update {
+                    it.copy(
+                        isTimePickerVisible = true
+                    )
+                }
+            }
+
+            is HabitDateEvent.DeleteReminder -> {
+                _dateState.update {
+                    it.copy(
+                        hasReminder = false,
+                        reminderHour = 0,
+                        reminderMinute = 0
+                    )
+                }
+                viewModelScope.launch(Dispatchers.IO) {
+                    deleteReminderUseCase(event.habitId)
+                }
+
+            }
+
+            is HabitDateEvent.SaveReminder -> {
+                _dateState.update {
+                    it.copy(
+                        isTimePickerVisible = false,
+                        hasReminder = true,
+                        reminderHour = event.reminderHour,
+                        reminderMinute = event.reminderMinute
+                    )
+                }
+                viewModelScope.launch(Dispatchers.IO) {
+                    addReminderUseCase(event.habitId, event.reminderHour, event.reminderMinute)
+                }
+
+            }
         }
     }
 
@@ -191,7 +279,12 @@ class HabitViewModel @Inject constructor(
             HabitEvent.HideDialog -> {
                 _state.update {
                     it.copy(
-                        isAddingHabit = false
+                        isAddingHabit = false,
+                        name = "",
+                        addingError = null,
+                        hasReminder = false,
+                        hour = 0,
+                        minute = 0
                     )
                 }
             }
@@ -201,34 +294,42 @@ class HabitViewModel @Inject constructor(
                 if (name.isBlank()) {
                     return
                 }
+                val hasReminder = state.value.hasReminder
+                val hour = state.value.hour
+                val minute = state.value.minute
                 val habit = Habit(
                     name = name,
-                    creationDate = LocalDate.now().toString()
+                    creationDate = LocalDate.now().toString(),
+                    hasReminder = hasReminder,
+                    reminderHour = hour,
+                    reminderMinute = minute
                 )
                 viewModelScope.launch(Dispatchers.IO) {
                     var doesContainName = false
-                    state.value.habits.forEach { habit->
-                        if(habit.name == name){
+                    state.value.habits.forEach { habit ->
+                        if (habit.name == name) {
                             doesContainName = true
                         }
                     }
-                    if(doesContainName){
+                    if (doesContainName) {
                         _state.update {
                             it.copy(
                                 addingError = "That habit already exists"
                             )
                         }
-                    }else{
-                        addHabitUseCase(habit)
-                            _state.update {
-                                it.copy(
-                                    isAddingHabit = false,
-                                    name = "",
-                                    addingError = null
-                                )
-                            }
+                    } else {
+                        _state.update {
+                            it.copy(
+                                isAddingHabit = false,
+                                name = "",
+                                addingError = null,
+                                hasReminder = false,
+                                hour = 0,
+                                minute = 0
+                            )
                         }
-
+                        addHabitUseCase(habit)
+                    }
 
 
                 }
@@ -240,6 +341,25 @@ class HabitViewModel @Inject constructor(
                     it.copy(
                         name = event.name
                     )
+                }
+            }
+
+            HabitEvent.CheckReminder -> {
+                if(notificationPermissionChecker.areNotificationsEnabled()){
+                    _state.update {
+                        it.copy(
+                            hasReminder = !it.hasReminder
+                        )
+                    }
+                }else{
+                    _uiState.update {
+                        it.copy(
+                            areNotificationsOn = false
+                        )
+                    }
+                    viewModelScope.launch {
+                        _uiEvent.emit(UiEvent.RequestNotificationPermission)
+                    }
                 }
             }
 
@@ -259,6 +379,32 @@ class HabitViewModel @Inject constructor(
                 viewModelScope.launch(Dispatchers.IO) {
                     checkOutHabitUseCase(
                         habit = event.habit
+                    )
+                }
+            }
+
+            HabitEvent.HideTimePicker -> {
+                _state.update {
+                    it.copy(
+                        isTimePickerVisible = false
+                    )
+                }
+            }
+
+            is HabitEvent.SaveReminder -> {
+                _state.update {
+                    it.copy(
+                        isTimePickerVisible = false,
+                        hour = event.hour,
+                        minute = event.minute
+                    )
+                }
+            }
+
+            HabitEvent.ShowTimePicker -> {
+                _state.update {
+                    it.copy(
+                        isTimePickerVisible = true
                     )
                 }
             }

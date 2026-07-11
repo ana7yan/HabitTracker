@@ -28,6 +28,9 @@ interface HabitDao{
     @Query("SELECT * FROM habits ORDER BY streak DESC")
     fun getHabitsOrderedByStreak(): Flow<List<HabitEntity>>
 
+    @Query("SELECT * FROM habits WHERE id = :habitId")
+    fun getHabitById(habitId: Int): HabitEntity
+
     @Update
     suspend fun updateHabit(habit: HabitEntity)
     @Update

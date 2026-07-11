@@ -4,8 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
-    id("kotlin-kapt")
+    alias(libs.plugins.ksp) 
     alias(libs.plugins.google.gms.google.services)
 }
 
@@ -65,6 +64,9 @@ dependencies {
     implementation(libs.androidx.credentials.play.services)
     implementation(libs.googleid)
     implementation(libs.facebook.login)
+    implementation(libs.firebase.messaging)
+    implementation(libs.androidx.hilt.work)
+    implementation(libs.androidx.work.runtime.ktx)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -83,4 +85,5 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(project(":domain"))
     implementation(project(":data"))
+    implementation(project(":platform"))
 }

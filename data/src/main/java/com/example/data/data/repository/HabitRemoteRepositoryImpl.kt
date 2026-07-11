@@ -1,5 +1,6 @@
 package com.example.data.data.repository
 
+import android.util.Log
 import com.example.data.data.mapper.toDataRemote
 import com.example.data.data.mapper.toDomainRemote
 import com.example.data.data.model.FirebaseHabitUnit
@@ -26,15 +27,12 @@ class HabitRemoteRepositoryImpl(
 
     override suspend fun updateHabitInDB(
         userId: String,
-        habitId: String,
-        streak: Int,
-        dates: List<String>
+        habit: Habit
     ) {
-        firebaseHabitDataSource.updateHabitStreakAndDates(
+        Log.d("FIREBASE",habit.remoteId.toString())
+        firebaseHabitDataSource.updateHabit(
             userId,
-            habitId,
-            streak,
-            dates
+            habit.toDataRemote()
         )
     }
 
@@ -43,13 +41,7 @@ class HabitRemoteRepositoryImpl(
         habitsToSync: List<Habit>,
     ) {
         val firebaseHabitUnits = habitsToSync.map{ habitToSync->
-            FirebaseHabitUnit(
-                name = habitToSync.name,
-                remoteId = habitToSync.remoteId.toString(),
-                streak = habitToSync.streak,
-                creationDate = habitToSync.creationDate,
-                checkedDates = habitToSync.checkedDates
-            )
+            habitToSync.toDataRemote()
         }
 
         firebaseHabitDataSource.updateHabitsInRTDB(uid = userId,firebaseHabitUnits)

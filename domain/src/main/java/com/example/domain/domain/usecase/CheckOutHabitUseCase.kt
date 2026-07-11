@@ -31,9 +31,7 @@ class CheckOutHabitUseCase @Inject constructor(
         val userId = authRepository.getCurrentUserId() ?: return
         firebaseRepository.updateHabitInDB(
             userId,
-            habitUpdated.remoteId.toString(),
-            habitUpdated.streak,
-            dates
+            habitUpdated.copy(checkedDates = dates)
         )
     }
 }

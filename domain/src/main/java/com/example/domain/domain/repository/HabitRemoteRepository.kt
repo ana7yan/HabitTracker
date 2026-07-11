@@ -14,9 +14,7 @@ interface HabitRemoteRepository {
     )
     suspend fun updateHabitInDB(
         userId: String,
-        habitId: String,
-        streak: Int,
-        dates: List<String>,
+        habit: Habit
     )
     suspend fun updateHabitsInRTDB(
         userId: String,

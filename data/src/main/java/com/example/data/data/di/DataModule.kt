@@ -1,10 +1,7 @@
 package com.example.data.data.di
 
 import android.content.Context
-import androidx.credentials.CredentialManager
-import androidx.credentials.GetCredentialRequest
 import androidx.room.Room
-import com.example.data.BuildConfig
 import com.example.data.data.local.database.HabitDao
 import com.example.data.data.local.database.HabitDatabase
 import com.example.data.data.local.database.HabitDateDao
@@ -29,18 +26,13 @@ import com.example.domain.domain.repository.HabitRemoteRepository
 import com.example.domain.domain.repository.HabitRepository
 import com.example.domain.domain.repository.PreferencesRepository
 import com.example.domain.domain.repository.UserAuthRepository
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.FirebaseDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.tasks.await
-import javax.inject.Inject
 import javax.inject.Singleton
 
 @Module

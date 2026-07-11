@@ -16,6 +16,7 @@ interface HabitRepository {
 
     suspend fun deleteHabit(habit: Habit)
     suspend fun updateHabits(habits: List<Habit>)
+    suspend fun getHabitById(habitId: Int): Habit
 
 
 

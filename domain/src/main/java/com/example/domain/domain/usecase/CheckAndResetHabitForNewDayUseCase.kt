@@ -6,6 +6,7 @@ import com.example.domain.domain.repository.HabitRemoteRepository
 import com.example.domain.domain.repository.HabitRepository
 import com.example.domain.domain.repository.PreferencesRepository
 import com.example.domain.domain.repository.UserAuthRepository
+import java.nio.channels.NetworkChannel
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -32,9 +33,7 @@ class CheckAndResetHabitForNewDayUseCase @Inject constructor (
                 val dates = dateRepository.getAllDates(habit.id)
                 firebaseRepository.updateHabitInDB(
                     userId,
-                    habit.remoteId.toString(),
-                    updatedHabit.streak,
-                    dates
+                    updatedHabit.copy(checkedDates = dates)
                 )
             }
         }

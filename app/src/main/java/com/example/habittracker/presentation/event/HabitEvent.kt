@@ -6,6 +6,10 @@ import com.example.domain.domain.model.SortType
 sealed interface HabitEvent {
     object SaveHabit: HabitEvent
     data class SetName(val name: String): HabitEvent
+    object CheckReminder: HabitEvent
+    object ShowTimePicker: HabitEvent
+    object HideTimePicker: HabitEvent
+    data class SaveReminder(val hour: Int, val minute: Int): HabitEvent
     object ShowDialog: HabitEvent
     object HideDialog: HabitEvent
     data class SortHabits (val sortType: SortType): HabitEvent

@@ -17,7 +17,10 @@ fun HabitEntity.toDomain(): Habit {
         streak = streak,
         lastCompletedDate = lastCompletedDate.toString(),
         isCompletedToday = isCompletedToday,
-        creationDate = creationDate
+        creationDate = creationDate,
+        hasReminder = hasReminder,
+        reminderHour = reminderHour,
+        reminderMinute = reminderMinute
     )
 }
 fun Habit.toData(): HabitEntity {
@@ -28,7 +31,10 @@ fun Habit.toData(): HabitEntity {
         streak = streak,
         lastCompletedDate = lastCompletedDate.toString(),
         isCompletedToday = isCompletedToday,
-        creationDate = creationDate
+        creationDate = creationDate,
+        hasReminder = hasReminder,
+        reminderHour = reminderHour,
+        reminderMinute = reminderMinute
     )
 }
 fun HabitDateEntity.toDomain(): HabitDate{
@@ -53,7 +59,10 @@ fun FirebaseHabitUnit.toDomainRemote() : Habit{
         name = name,
         streak = streak,
         creationDate = creationDate,
-        checkedDates = checkedDates
+        checkedDates = checkedDates,
+        hasReminder = hasReminder,
+        reminderHour = reminderHour,
+        reminderMinute = reminderMinute
     )
 }
 
@@ -61,7 +70,11 @@ fun Habit.toDataRemote(): FirebaseHabitUnit{
     return FirebaseHabitUnit(
         name = name,
         streak = streak,
+        remoteId = remoteId.toString(),
         creationDate = creationDate,
-        checkedDates = checkedDates
+        checkedDates = checkedDates,
+        hasReminder = hasReminder,
+        reminderHour = reminderHour,
+        reminderMinute = reminderMinute
     )
 }

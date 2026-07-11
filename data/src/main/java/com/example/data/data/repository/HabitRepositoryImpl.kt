@@ -43,6 +43,10 @@ class HabitRepositoryImpl(
         dao.updateHabits(habits.map { it.toData() })
     }
 
+    override suspend fun getHabitById(habitId: Int): Habit {
+        return dao.getHabitById(habitId).toDomain()
+    }
+
     override suspend fun deleteHabit(habit: Habit) {
         dao.delete(habit.toData())
     }

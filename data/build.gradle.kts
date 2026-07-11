@@ -49,6 +49,7 @@ android {
 dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
+    implementation(libs.work.runtime.ktx)
     ksp(libs.room.compiler)
     coreLibraryDesugaring(libs.android.desugar)
     implementation(platform(libs.firebase.bom))

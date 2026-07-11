@@ -1,5 +1,6 @@
 package com.example.data.data.remote
 
+import android.util.Log
 import com.example.data.data.model.FirebaseHabitUnit
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -38,7 +39,10 @@ class FirebaseHabitDataSource @Inject constructor(
                 "name" to habit.name,
                 "remoteId" to habit.remoteId,
                 "checkedDates" to habit.checkedDates,
-                "creationDate" to habit.creationDate
+                "creationDate" to habit.creationDate,
+                "hasReminder" to habit.hasReminder,
+                "reminderHour" to habit.reminderHour,
+                "reminderMinute" to habit.reminderMinute
             )
             updateMap[path] = habitData
         }
@@ -78,22 +82,23 @@ class FirebaseHabitDataSource @Inject constructor(
         }
     }
 
-    override suspend fun updateHabitStreakAndDates(
+    override suspend fun updateHabit(
         userId: String,
-        habitId: String,
-        streak: Int,
-        dates: List<String>
+        habit: FirebaseHabitUnit
     ) {
         val updates = mapOf(
-            "streak" to streak,
-            "checkedDates" to dates,
-            "remoteId" to habitId
+            "streak" to habit.streak,
+            "checkedDates" to habit.checkedDates,
+            "remoteId" to habit.remoteId,
+            "hasReminder" to habit.hasReminder,
+            "reminderHour" to habit.reminderHour,
+            "reminderMinute" to habit.reminderMinute
         )
 
         db.getReference("users")
             .child(userId)
             .child("habits")
-            .child(habitId)
+            .child(habit.remoteId)
             .updateChildren(updates)
             .await()
     }

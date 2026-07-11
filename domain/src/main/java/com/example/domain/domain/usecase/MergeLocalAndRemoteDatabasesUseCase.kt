@@ -8,8 +8,10 @@ import com.example.domain.domain.repository.HabitDateRepository
 import com.example.domain.domain.repository.HabitRemoteRepository
 import com.example.domain.domain.repository.HabitRepository
 import com.example.domain.domain.repository.UserAuthRepository
+import com.example.domain.domain.sceduler.ReminderScheduler
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
+import java.util.Calendar
 import javax.inject.Inject
 
 class MergeLocalAndRemoteDatabasesUseCase @Inject constructor(
@@ -17,6 +19,7 @@ class MergeLocalAndRemoteDatabasesUseCase @Inject constructor(
     private val authRepository: UserAuthRepository,
     private val habitRepository: HabitRepository,
     private val habitDateRepository: HabitDateRepository,
+    private val reminderScheduler: ReminderScheduler
 ) {
     suspend operator fun invoke() {
         val uid = authRepository.getCurrentUserId()
@@ -53,7 +56,18 @@ class MergeLocalAndRemoteDatabasesUseCase @Inject constructor(
                         LocalDate.parse(remoteHabit.creationDate) < LocalDate.parse(localHabit.creationDate)
                     ) remoteHabit.creationDate
                     else localHabit.creationDate
-
+                val hasReminder = localHabit.hasReminder || remoteHabit.hasReminder
+                val reminderHour = if(localHabit.hasReminder) localHabit.reminderHour else remoteHabit.reminderHour
+                val reminderMinute = if(localHabit.hasReminder) localHabit.reminderMinute else remoteHabit.reminderMinute
+                if(!localHabit.hasReminder && remoteHabit.hasReminder){
+                    reminderScheduler.scheduleReminder(
+                        localHabit.copy(
+                            hasReminder = true,
+                            reminderHour = reminderHour,
+                            reminderMinute = reminderMinute
+                        )
+                    )
+                }
                 val habit = Habit(
                     id = localHabit.id,
                     remoteId = remoteHabit.remoteId,
@@ -62,16 +76,16 @@ class MergeLocalAndRemoteDatabasesUseCase @Inject constructor(
                     lastCompletedDate = lastCompletedDate,
                     isCompletedToday = isCompletedToday,
                     creationDate = creationDate,
-                    checkedDates = dates
+                    checkedDates = dates,
+                    hasReminder = hasReminder,
+                    reminderHour = reminderHour,
+                    reminderMinute = reminderMinute
                 )
                 updatedHabits.add(habit)
             } else {
                 val dates = habitDateRepository.getAllDates(localHabit.id)
-                val firebaseHabit = Habit(
-                    name = localHabit.name,
-                    streak = localHabit.streak,
-                    creationDate = localHabit.creationDate,
-                    checkedDates = dates,
+                val firebaseHabit = localHabit.copy(
+                    checkedDates = dates
                 )
                 val remoteId = habitRemoteRepository.addHabitToDB(uid,firebaseHabit)
                 habitRepository.updateHabit(localHabit.copy(remoteId = remoteId))
@@ -84,20 +98,18 @@ class MergeLocalAndRemoteDatabasesUseCase @Inject constructor(
             if(localHabit == null) {
                 val lastCompetedDates = remoteHabit.checkedDates.maxOfOrNull { LocalDate.parse(it) }.toString()
                 val isCompletedToday = remoteHabit.checkedDates.contains(LocalDate.now().toString())
-                val habit = Habit(
-                    remoteId = remoteHabit.remoteId,
-                    name = remoteHabit.name,
-                    streak = remoteHabit.streak,
+                val habit = remoteHabit.copy(
                     lastCompletedDate = lastCompetedDates,
-                    isCompletedToday = isCompletedToday,
-                    creationDate = remoteHabit.creationDate,
-                    checkedDates = remoteHabit.checkedDates
+                    isCompletedToday = isCompletedToday
                 )
                 val habitId = habitRepository.insertHabit(habit)
                 val dates = remoteHabit.checkedDates.map {
                     HabitDate(habitId = habitId, date = LocalDate.parse(it))
                 }
                 habitDateRepository.upsertDates(dates)
+                if(remoteHabit.hasReminder){
+                    reminderScheduler.scheduleReminder(remoteHabit.copy(id = habitId))
+                }
             }
         }
         if(!updatedHabits.isEmpty()){

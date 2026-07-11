@@ -23,7 +23,6 @@ class SyncLocalToRemoteUseCase @Inject constructor(
         val updatedHabits = mutableListOf<Habit>()
         habitRepository.getAllHabits().forEach { habit ->
             val dates = habitDateRepository.getAllDates(habit.id)
-
             val remoteId = habitRemoteRepository.addHabitToDB(uid, habit.copy(checkedDates = dates))
             updatedHabits.add(habit.copy(remoteId = remoteId))
         }

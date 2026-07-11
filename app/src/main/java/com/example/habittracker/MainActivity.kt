@@ -1,13 +1,16 @@
 package com.example.habittracker
 
 
-import android.content.Intent
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.core.app.ActivityCompat
 import androidx.credentials.CredentialManager
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -24,9 +27,9 @@ import com.example.habittracker.presentation.screen.UserSignupScreen
 import com.example.habittracker.presentation.viewmodel.AuthViewModel
 import com.example.habittracker.presentation.viewmodel.HabitViewModel
 import com.example.habittracker.ui.theme.HabitTrackerTheme
-import com.facebook.CallbackManager
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
@@ -44,6 +47,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                100
+            )
+        }
+        FirebaseMessaging.getInstance().token
+            .addOnSuccessListener { token ->
+                Log.d("FCM_TOKEN", token)
+            }
         setContent {
             HabitTrackerTheme {
                 val navController = rememberNavController()
@@ -51,6 +66,7 @@ class MainActivity : ComponentActivity() {
                 val viewModel = hiltViewModel<HabitViewModel>()
                 val state by viewModel.state.collectAsState()
                 val dateState by viewModel.dateState.collectAsState()
+                val uiState by viewModel.uiState.collectAsState()
 
                 val authViewModel = hiltViewModel<AuthViewModel>()
                 val loginState by authViewModel.loginState.collectAsState()
@@ -66,8 +82,11 @@ class MainActivity : ComponentActivity() {
                             state = state,
                             onEvent = viewModel::onEvent,
                             navController = navController,
-                            context = applicationContext,
-                            isLoggedIn = isLoggedIn
+                            context = this@MainActivity,
+                            viewModel = viewModel,
+                            isLoggedIn = isLoggedIn,
+                            uiState = uiState,
+                            onUiEvent = viewModel::onUiEvent
                         )
                     }
                     composable<HabitId> { backStackEntry ->
@@ -77,7 +96,10 @@ class MainActivity : ComponentActivity() {
                             habitId = habit.habitId,
                             navController = navController,
                             viewModel = viewModel,
-                            onEvent = viewModel::onDateEvent
+                            onEvent = viewModel::onDateEvent,
+                            uiState = uiState,
+                            onUiEvent = viewModel::onUiEvent,
+                            context = this@MainActivity
                         )
                     }
                     composable(route = "login") {
@@ -118,6 +140,16 @@ class MainActivity : ComponentActivity() {
                             navController = navController
                         )
                     }
+                }
+                val destination =
+                    intent.getStringExtra("destination") ?: ""
+                Log.d(
+                    "NAV_TEST",
+                    "Destination = $destination"
+                )
+                if(destination.contains("id")){
+                    val habitId = destination.split(":")[1].toInt()
+                    navController.navigate(HabitId(habitId))
                 }
             }
         }

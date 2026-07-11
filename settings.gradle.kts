@@ -23,3 +23,4 @@ rootProject.name = "Habit Tracker"
 include(":app")
 include(":data")
 include(":domain")
+include(":platform")
